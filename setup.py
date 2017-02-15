@@ -13,7 +13,7 @@ setup(
     packages=['msschem', 'tests'],
     long_description=open('README.rst').read(),
     classifiers=[
-            'Development Status :: 3 - Alpha',
+            'Development Status :: 2 - Pre-Alpha',
             'Topic :: Scientific/Engineering :: Atmospheric Science',
             'License :: OSI Approved :: MIT License',
     ],

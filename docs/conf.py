@@ -127,7 +127,6 @@ if os.environ.get('READTHEDOCS') != 'True':  # only import and set the theme if 
     import sphinx_rtd_theme
     html_theme = 'sphinx_rtd_theme'
     html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
-    #html_style = 'css/mss.css'
 else:
     html_context = {
         'display_github': True, # Add 'Edit on Github' link instead of 'View page source'
