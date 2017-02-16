@@ -5,13 +5,13 @@ Atmospheric chemistry models integrated into mss-chem
 Overview
 ========
 
-==================  ===========  ======  ==========  ========
-Model               Institute    Domain  resolution  # layers
-==================  ===========  ======  ==========  ========
+==================  ===========  ======  ==========  ========  =============  =================
+Model               Institute    Domain  resolution  # layers  forecast step  forecast duration
+==================  ===========  ======  ==========  ========  =============  =================
 `CAMS (global)`_    Copernicus_  global  0.4°        60
 `CAMS (regional)`_  Copernicus_  Europe  0.1°        8
-SILAM_              FMI_         Europe  ???         10
-==================  ===========  ======  ==========  ========
+SILAM_              FMI_         Europe  0.1°        10        1h             120h
+==================  ===========  ======  ==========  ========  =============  =================
 
 
 
