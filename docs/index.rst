@@ -7,7 +7,7 @@ forecasts and prepare them for usage by the `Mission Support System (mss)
 <http://mss.readthedocs.io/en/latest/>`__ to facilitate the mission planning for
 atmospheric research flights.
 
-.. note::
+.. warning::
 
    This project is currently in a non-usable pre-alpha state
 
@@ -17,8 +17,9 @@ Contents
 
 .. toctree::
    :maxdepth: 2
+   :includehidden:
               
-   models
+   models/index
 
 
 
