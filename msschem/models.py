@@ -177,6 +177,25 @@ class CTMDriver(object):
         return int((fcend - fcstart) / self.fcstep) + 1
 
 
+class CAMSGlobDriver(CTMDriver):
+
+    fcstep = datetime.timedelta(hours=3)
+
+    # offset of first forecast step relative to fcinit
+    fcstart_offset = datetime.timedelta(hours=0)
+
+    # maximum forecast step relative to fcinit
+    fcend_offset = datetime.timedelta(hours=120)
+
+    # dimensions
+    dims = [('t', None), ('z', 60), ('y', 451), ('x', 900)]
+
+    species = {'NO2': dict(varname='no2', urlname='no2'),
+               }
+
+    concentration_type = 'mass'
+
+
 class CAMSRegDriver(CTMDriver):
 
     fcstep = datetime.timedelta(hours=1)
