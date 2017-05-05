@@ -47,7 +47,7 @@ import datetime
 import os.path
 import tempfile
 
-from netCDF4 import Dataset, MFDataset
+from netCDF4 import Dataset, MFDataset, date2num, num2date
 import numpy as np
 
 # from .download import CAMSRegDownload, SilamDownload
@@ -57,6 +57,9 @@ from .species import species_names
 
 
 class CTMDriver(object):
+
+    needed_vars = []
+
     def __init__(self, cfg):
         if cfg.get('force') is None:
             cfg['force'] = False
@@ -64,6 +67,14 @@ class CTMDriver(object):
             cfg['temppath'] = os.path.join(cfg['basepath'], 'tmp')
         if not os.path.isdir(cfg['temppath']):
             os.makedirs(cfg['temppath'])
+        for sp in cfg.get('species', []):
+            if sp not in self.species.keys():
+                raise ValueError(
+                    'The requested species `{}` is not supported for model '
+                    '`{}`'.format(sp, cfg.get('name')))
+        if ('AIR_PRESSURE' in self.species.keys() and
+                'AIR_PRESSURE' not in cfg.get('species', [])):
+            cfg['species'] = cfg['species'] + ['AIR_PRESSURE']
         self.cfg = cfg
 
     def check_day(self, day):
@@ -140,13 +151,21 @@ class CTMDriver(object):
         self.fix_dataset(fn_out, species, fcinit)
 
     def set_standard_name(self, nc, species):
-        stdname = '{}_concentration_of_{}_in_air'.format(
-                self.concentration_type, species_names[species])
+        if species == 'AIR_PRESSURE':
+            stdname = 'air_pressure'
+        else:
+            stdname = '{}_{}_of_{}_in_air'.format(
+                    self.concentration_type, self.quantity_type,
+                    species_names[species])
         nc.variables[self.species[species]['varname']].setncattr(
                 'standard_name', stdname)
 
-    @staticmethod
-    def write_dataset(fns_in, fn_out):
+    def fix_dataset(self, fn_out, species, fcinit):
+        raise NotImplementedError(
+                'The method `fix_dataset` must be implemented in the '
+                'model implementation.')
+
+    def write_dataset(self, varname_species, fns_in, fn_out):
         with Dataset(fn_out, 'w') as nc_out, MFDataset(fns_in, 'r') as nc_in:
             # copy dimensions
             for name, dim in nc_in.dimensions.items():
@@ -159,6 +178,8 @@ class CTMDriver(object):
 
             # copy variables
             for name, var in nc_in.variables.items():
+                if name not in self.needed_vars + [varname_species]:
+                    continue
                 try:
                     dtype = var.datatype
                 except AttributeError:
@@ -227,6 +248,7 @@ class CAMSGlobDriver(CTMDriver):
                }
 
     concentration_type = 'mass'
+    quantity_type = 'concentration'
 
 
 class CAMSRegDriver(CTMDriver):
@@ -247,6 +269,7 @@ class CAMSRegDriver(CTMDriver):
                }
 
     concentration_type = 'mass'
+    quantity_type = 'concentration'
 
     def get_nt(self, fcinit, fcstart, fcend):
         # CAMS Regional files have 25 steps for the first forecast day
@@ -292,3 +315,61 @@ class SilamDriver(CTMDriver):
     species = {'HCHO': dict(varname='cnc_HCHO_gas',
                             urlname='cnc_HCHO_gas'),
                }
+
+    concentration_type = 'mass'
+    quantity_type = 'density'
+
+
+class EMEPDriver(CTMDriver):
+
+    fcstep = datetime.timedelta(hours=1)
+
+    # offset of first forecast step relative to fcinit
+    fcstart_offset = datetime.timedelta(hours=1)
+
+    # maximum forecast step relative to fcinit
+    fend_offset = datetime.timedelta(hours=120)
+
+    # dimensions
+    dims = [('t', None), ('z', 20), ('y', 281), ('x', 281)]
+
+    species = {'O3': dict(varname='D_ug_O3', urlname=''),
+               'NO2': dict(varname='D_ug_NO2', urlname=''),
+               'PM25': dict(varname='D_ug_PM25_wet', urlname=''),
+               'PM10': dict(varname='D_ug_PM10_wet', urlname=''),
+               'NO': dict(varname='D_ug_NO', urlname=''),
+               'SO2': dict(varname='D_ug_SO2', urlname=''),
+               'CO': dict(varname='D_ug_CO', urlname=''),
+               'NH3': dict(varname='D_ug_NH3', urlname=''),
+               'PANS': dict(varname='D_ug_PAN', urlname=''),
+               'NMVOC': dict(varname='D_ug_NMVOC', urlname=''),
+               'AIR_PRESSURE': dict(varname='P0', urlname=''),
+               }
+
+    needed_vars = ['lon', 'lat', 'lev', 'hyam', 'hybm', 'time']
+
+    concentration_type = 'mass'
+    quantity_type = 'density'
+
+    def fix_dataset(self, fn_out, species, fcinit):
+        # TODO calculate pressure
+        with Dataset(fn_out, 'a') as nc:
+            # convert time to hours since fcinit
+            t_obj = num2date(nc.variables['time'][:],
+                             nc.variables['time'].units)
+            t_unit = 'hours since {:%Y-%m-%dT%H:%M:%S}'.format(fcinit)
+            nc.variables['time'][:] = date2num(t_obj, t_unit)
+            nc.variables['time'].setncattr('units', t_unit)
+            nc.variables['time'].setncattr('standard_name', 'time')
+            # set standard name of data variable
+            self.set_standard_name(nc, species)
+            # calculate air pressure
+            if species == 'AIR_PRESSURE':
+                p0_ = nc.variables['P0'][:]
+                a_ = nc.variables['hyam'][:]
+                b_ = nc.variables['hybm'][:]
+                # FIXME currently no surface pressure in file!!!
+                ps_ = None
+                nc.variables['P0'][:] = None
+                # rename pressure variable
+                nc.renameVariable('P0', 'air_pressure')
