@@ -47,7 +47,12 @@ class TestCAMSRegDriver(unittest.TestCase):
 
         dr = self.driver
 
-        dr.postprocess('CO', datetime.datetime(2017, 2, 15), ['/home2/hilboll/tmp/mss/data/tmp/tmp7yk61fce_25H48H.nc'])
+        dr.postprocess('NO2',
+                       datetime.datetime(2017, 3, 31),
+                       ['/home2/hilboll/tmp/msschem/cams_regional/0H24H.nc',
+                        '/home2/hilboll/tmp/msschem/cams_regional/25H48H.nc',
+                        '/home2/hilboll/tmp/msschem/cams_regional/49H72H.nc',
+                        '/home2/hilboll/tmp/msschem/cams_regional/73H96H.nc'])
 
 #    def test_download(self):
 #
@@ -60,6 +65,22 @@ class TestCAMSRegDriver(unittest.TestCase):
 #        #import pdb; pdb.set_trace()
 #
 #        print(dr.download('CO', init, end, start))
+
+class TestEMEPDriver(unittest.TestCase):
+
+    def setUp(self):
+        self.driver = msschem_settings.register_datasources['EMEP']
+
+    def test_postprocess(self):
+
+        dr = self.driver
+
+        dr.postprocess('NO2',
+                       datetime.datetime(2017, 3, 31),
+                       ['/home2/hilboll/tmp/msschem/emep/CWF_12FCe-20170313_hourInst.nc'])
+        dr.postprocess('AIR_PRESSURE',
+                       datetime.datetime(2017, 3, 31),
+                       ['/home2/hilboll/tmp/msschem/emep/CWF_12FCe-20170313_hourInst.nc'])
 
 if __name__ == '__main__':
     unittest.main()
