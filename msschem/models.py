@@ -384,7 +384,7 @@ class EMEPDriver(CTMDriver):
                'NH3': dict(varname='D3_ug_NH3', urlname=''),
                'PANS': dict(varname='D3_ug_PAN', urlname=''),
                'NMVOC': dict(varname='D3_ug_NMVOC', urlname=''),
-               'AIR_PRESSURE': dict(varname='P0', urlname=''),
+               'AIR_PRESSURE': dict(varname='PS', urlname=''),
                }
 
     needed_vars = ['lon', 'lat', 'lev', 'hyam', 'hybm', 'time']
@@ -393,7 +393,6 @@ class EMEPDriver(CTMDriver):
     quantity_type = 'density'
 
     def fix_dataset(self, fn_out, species, fcinit):
-        # TODO calculate pressure
         with Dataset(fn_out, 'a') as nc:
             # convert time to hours since fcinit
             t_obj = num2date(nc.variables['time'][:],
@@ -406,13 +405,13 @@ class EMEPDriver(CTMDriver):
             self.set_standard_name(nc, species)
             # calculate air pressure
             if species == 'AIR_PRESSURE':
-                p0_ = nc.variables['P0'][:]
                 a_ = nc.variables['hyam'][:]
                 b_ = nc.variables['hybm'][:]
-                # FIXME currently no surface pressure in file!!!
-                ps_ = None
-                # TODO calculate air_pressure
-                p_ = p0_.copy()
+                ps_ = nc.variables['PS'][:]
+                # calculate air_pressure
+                p_ = (a_[np.newaxis, :, np.newaxis, np.newaxis] +
+                      b_[np.newaxis, :, np.newaxis, np.newaxis] *
+                      ps_[:, np.newaxis, :, :]) * 100.
                 # write air_pressure to file
                 nc.createVariable(
                     'P', p_.dtype, ('time', 'lev', 'lat', 'lon'),
@@ -423,7 +422,7 @@ class EMEPDriver(CTMDriver):
                 nc.variables['P'].setncattr('standard_name', 'air_pressure')
                 nc.variables['P'].setncattr('units', 'Pa')
                 # delete surface pressure variable
-                del nc.variables['P0']
+                del nc.variables['PS']
 
     def write_dataset(self, varname_species, fns_in, fn_out):
         with Dataset(fn_out, 'w') as nc_out, Dataset(fns_in[0], 'r') as nc_in:
