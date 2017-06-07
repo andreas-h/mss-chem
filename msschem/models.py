@@ -1,4 +1,19 @@
 # -*- coding: utf-8 -*-
+
+from collections import OrderedDict
+import datetime
+import os.path
+import tempfile
+
+from netCDF4 import Dataset, MFDataset, date2num, num2date
+import numpy as np
+
+# from .download import CAMSRegDownload, SilamDownload
+# from .version import __version__
+
+from .species import species_names
+
+
 """**************
 msschem.models
 **************
@@ -41,19 +56,6 @@ NOTES
 
 
 """
-
-from collections import OrderedDict
-import datetime
-import os.path
-import tempfile
-
-from netCDF4 import Dataset, MFDataset, date2num, num2date
-import numpy as np
-
-# from .download import CAMSRegDownload, SilamDownload
-# from .version import __version__
-
-from .species import species_names
 
 
 class CTMDriver(object):
@@ -337,7 +339,7 @@ class SilamDriver(CTMDriver):
     dims = [('t', None), ('z', 10), ('y', 420), ('x', 700)]
 
     species = {'NO2': dict(varname='cnc_NO2_gas',
-                            urlname='cnc_NO2_gas'),
+                           urlname='cnc_NO2_gas'),
                'HCHO': dict(varname='cnc_HCHO_gas',
                             urlname='cnc_HCHO_gas'),
                'AIR_PRESSURE': dict(varname='pressure',

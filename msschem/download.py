@@ -1,7 +1,23 @@
 # -*- coding: utf-8 -*-
+
 from __future__ import with_statement
 
+from collections import OrderedDict
 from contextlib import closing
+import datetime
+from ftplib import FTP
+import os.path
+import re
+import shutil
+
+try:  # Py2
+    from urllib import urlencode
+    from urllib2 import urlopen
+except ImportError:  # Py3
+    from urllib.parse import urlencode
+    from urllib.request import urlopen
+
+
 """****************
 msschem.download
 ****************
@@ -39,24 +55,24 @@ SOFTWARE.
 NOTES
 *****
 
-- [ ] foresee timeout setting
+- SILAM download URLs:
+
+  http://silam.fmi.fi/thredds/ncss/silam_europe_v5_5/runs/silam_europe_v5_5_RUN_2017-03-31T00:00:00Z?disableLLSubset=on&disableProjSubset=on&horizStride=1&time_start=2017-03-31T01%3A00%3A00Z&time_end=2017-04-05T00%3A00%3A00Z&timeStride=1&vertCoord=&accept=netcdf
+  http://silam.fmi.fi/thredds/ncss/silam_europe_v5_5/runs/silam_europe_v5_5_RUN_2017-03-31T00:00:00Z?disableLLSubset=on&disableProjSubset=on&horizStride=1&time_start=2017-03-31T01%3A00%3A00Z&time_end=2017-04-05T00%3A00%3A00Z&timeStride=1&vertCoord=&addLatLon=true&accept=netcdf
+
+  http://silam.fmi.fi/thredds/ncss/silam_europe_v5_5/runs/silam_europe_v5_5_RUN_2017-03-31T00:00:00Z?var=cnc_NO2_gas&disableLLSubset=on&disableProjSubset=on&horizStride=1&time_start=2017-03-31T01%3A00%3A00Z&time_end=2017-04-05T00%3A00%3A00Z&timeStride=1&vertCoord=&accept=netcdf
+  http://silam.fmi.fi/thredds/ncss/silam_europe_v5_5/runs/silam_europe_v5_5_RUN_2017-03-31T00:00:00Z?var=cnc_NO2_gas&disableLLSubset=on&disableProjSubset=on&horizStride=1&time_start=2017-03-31T01%3A00%3A00Z&time_end=2017-04-05T00%3A00%3A00Z&timeStride=1&vertCoord=&addLatLon=true&accept=netcdf
+
+
+****
+TODO
+****
+
+- [ ] foresee timeout setting (SILAM)
+- [ ] check if data are all available (CAMS global manifest)
 
 
 """
-
-from collections import OrderedDict
-import datetime
-from ftplib import FTP
-import os.path
-import re
-import shutil
-
-try:  # Py2
-    from urllib import urlencode
-    from urllib2 import urlopen
-except ImportError:  # Py3
-    from urllib.parse import urlencode
-    from urllib.request import urlopen
 
 
 class DownloadDriver(object):
@@ -119,6 +135,10 @@ class HTTPDownload(DownloadDriver):
 
 
 class CAMSRegDownload(HTTPDownload):
+    # Data download, as defined under "Online data" on
+    # http://www.regional.atmosphere.copernicus.eu/ the token is available
+    # directly on the CAMS website; when one clicks on "Accept license", the
+    # URL generated contains this token.  So this is no secret!
     urlbase = ('http://download.regional.atmosphere.copernicus.eu/services/'
                'CAMS50')
     urlparams = {'token': '{token}',
