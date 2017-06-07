@@ -270,6 +270,8 @@ class CAMSGlobDriver(CTMDriver):
     concentration_type = 'mass'
     quantity_type = 'concentration'
 
+    # TODO How to handle two init times per day?
+
 
 class CAMSRegDriver(CTMDriver):
 

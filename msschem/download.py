@@ -152,6 +152,8 @@ class CAMSRegDownload(HTTPDownload):
     _modelnames = ['CHIMERE', 'EMEP', 'ENSEMBLE', 'EURAD', 'LOTOSEUROS',
                    'MATCH', 'MOCAGE', 'SILAM']
 
+    # TODO implement check? available_from_time = datetime.time(11, 30)
+
     def __init__(self, token='', modelname='ENSEMBLE'):
         if modelname not in self._modelnames:
             raise ValueError()
