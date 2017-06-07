@@ -19,6 +19,8 @@ register_datasources = {
             basepath=os.path.expanduser('~/tmp/mss/data/'),
             name='CAMSReg-ENSEMBLE',
             temppath=None,
+            species=['CO', 'NH3', 'NMVOC', 'NO2', 'NO', 'O3', 'PANS', 'PM10',
+                     'PM25', 'SO2'],
         )
     ),
     'CAMSGlob': CAMSGlobDriver(
