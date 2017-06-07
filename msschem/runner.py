@@ -31,6 +31,9 @@ if __name__ == '__main__':
         lockfile = os.path.join(target_dir, 'msschem.lock')
         donefile = os.path.join(target_dir, 'msschem.done')
 
+        if not os.path.isdir(target_dir):
+            os.makedirs(target_dir)
+
         # check if donefile exists
         if os.path.isfile(donefile):
             # TODO add option to re-download
