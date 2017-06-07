@@ -20,6 +20,8 @@ Contents
    :includehidden:
               
    models/index
+   dev/architecture
+   dev/tests
 
 
 
