@@ -285,10 +285,16 @@ class CAMSRegDriver(CTMDriver):
     # dimensions
     dims = [('t', None), ('z', 8), ('y', 400), ('x', 700)]
 
-    species = {'CO': dict(varname='co_conc',
-                          urlname='CO'),
-               'NO2': dict(varname='no2_conc',
-                           urlname='NO2'),
+    species = {'CO': dict(varname='co_conc', urlname='CO'),
+               'NH3': dict(varname='nh3_conc', urlname='NH3'),
+               'NMVOC': dict(varname='nmvoc_conc', urlname='NMVOC'),
+               'NO2': dict(varname='no2_conc', urlname='NO2'),
+               'NO': dict(varname='no_conc', urlname='NO'),
+               'O3': dict(varname='o3_conc', urlname='O3'),
+               'PANS': dict(varname='pans_conc', urlname='PANS'),
+               'PM10': dict(varname='pm10_conc', urlname='PM10'),
+               'PM25': dict(varname='pm2p5_conc', urlname='PM25'),
+               'SO2': dict(varname='so2_conc', urlname='SO2'),
                }
 
     needed_vars = ['longitude', 'latitude', 'level', 'time']
