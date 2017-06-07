@@ -139,9 +139,10 @@ class CTMDriver(object):
 
     def output_filename(self, species, fcinit):
         outdir = os.path.join(self.cfg['basepath'], self.cfg['name'],
-                              '{:%Y-%m-%dT%H}'.format(fcinit))
-        outname = 'MSSChem_{name}_{species}_{fcinit:%Y-%m-%dT%H}.nc'.format(
-                name=self.cfg['name'], species=species, fcinit=fcinit)
+                              '{:%Y-%m-%d_%H}'.format(fcinit))
+        outname = '{name}_{fcinit:%Y-%m-%d_%H}_{layer}_{species}.nc'.format(
+                name=self.cfg['name'], species=species.lower(),
+                layer=self.layer_type, fcinit=fcinit)
         return os.path.join(outdir, outname)
 
     def postprocess(self, species, fcinit, fns):
@@ -238,7 +239,7 @@ class CTMDriver(object):
         if not self.fcstart_offset <= fctime <= self.fcend_offset:
             raise ValueError()
 
-        if fctime % self.fcstep:
+        if fctime.total_seconds() % self.fcstep.total_seconds():
             raise ValueError('{} is not a valid fc_{}'.format(fctime,
                                                               start_or_end))
 
@@ -291,6 +292,7 @@ class CAMSRegDriver(CTMDriver):
 
     concentration_type = 'mass'
     quantity_type = 'concentration'
+    layer_type = 'al'
 
     def get_nt(self, fcinit, fcstart, fcend):
         # CAMS Regional files have 25 steps for the first forecast day
