@@ -207,7 +207,8 @@ class CTMDriver(object):
                 nc_out.variables[name].setncattr(attr, var.__dict__[attr])
 
     def write_dataset(self, varname_species, fns_in, fn_out):
-        with Dataset(fn_out, 'w') as nc_out, MFDataset(fns_in, 'r') as nc_in:
+        with (Dataset(fn_out, 'w', format='NETCDF4_CLASSIC') as nc_out,
+              MFDataset(fns_in, 'r') as nc_in):
             # copy dimensions
             self.copy_dimensions(nc_in, nc_out)
 
@@ -311,7 +312,7 @@ class CAMSRegDriver(CTMDriver):
         return nt
 
     def fix_dataset(self, fn_out, species, fcinit):
-        with Dataset(fn_out, 'a') as nc:
+        with Dataset(fn_out, 'a', format='NETCDF4_CLASSIC') as nc:
             nc.variables['time'].setncattr(
                 'units', 'hours since {:%Y-%m-%dT%H:%M:%S}'.format(fcinit))
             nc.variables['time'].setncattr('standard_name', 'time')
@@ -351,7 +352,7 @@ class SilamDriver(CTMDriver):
     quantity_type = 'density'
 
     def fix_dataset(self, fn_out, species, fcinit):
-        with Dataset(fn_out, 'a') as nc:
+        with Dataset(fn_out, 'a', format='NETCDF4_CLASSIC') as nc:
             # convert time to hours since fcinit
             t_obj = num2date(nc.variables['time'][:],
                              nc.variables['time'].units)
@@ -395,7 +396,7 @@ class EMEPDriver(CTMDriver):
     quantity_type = 'density'
 
     def fix_dataset(self, fn_out, species, fcinit):
-        with Dataset(fn_out, 'a') as nc:
+        with Dataset(fn_out, 'a', format='NETCDF4_CLASSIC') as nc:
             # convert time to hours since fcinit
             t_obj = num2date(nc.variables['time'][:],
                              nc.variables['time'].units)
@@ -427,7 +428,8 @@ class EMEPDriver(CTMDriver):
                 del nc.variables['PS']
 
     def write_dataset(self, varname_species, fns_in, fn_out):
-        with Dataset(fn_out, 'w') as nc_out, Dataset(fns_in[0], 'r') as nc_in:
+        with (Dataset(fn_out, 'w', format='NETCDF4_CLASSIC') as nc_out,
+              Dataset(fns_in[0], 'r') as nc_in):
             # copy dimensions
             self.copy_dimensions(nc_in, nc_out)
 
