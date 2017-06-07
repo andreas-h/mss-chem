@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+from __future__ import with_statement
+
+from contextlib import closing
 """****************
 msschem.download
 ****************
@@ -100,7 +103,8 @@ class HTTPDownload(DownloadDriver):
     @staticmethod
     def download_file(url, fn):
         # download recipe from http://stackoverflow.com/a/7244263
-        with urlopen(url) as resp, open(os.path.expanduser(fn), 'wb') as out:
+        with (closing(urlopen(url)) as resp,
+              open(os.path.expanduser(fn), 'wb') as out):
             shutil.copyfileobj(resp, out)
 
     def get(self, species, fcinit, fcstart, fcend, fn_out):
