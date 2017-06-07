@@ -209,8 +209,7 @@ class CTMDriver(object):
                 nc_out.variables[name].setncattr(attr, var.__dict__[attr])
 
     def write_dataset(self, varname_species, fns_in, fn_out):
-        with (Dataset(fn_out, 'w', format='NETCDF4_CLASSIC') as nc_out,
-              MFDataset(fns_in, 'r') as nc_in):
+        with Dataset(fn_out, 'w', format='NETCDF4_CLASSIC') as nc_out, MFDataset(fns_in, 'r') as nc_in:
             # copy dimensions
             self.copy_dimensions(nc_in, nc_out)
 
@@ -436,8 +435,7 @@ class EMEPDriver(CTMDriver):
                 del nc.variables['PS']
 
     def write_dataset(self, varname_species, fns_in, fn_out):
-        with (Dataset(fn_out, 'w', format='NETCDF4_CLASSIC') as nc_out,
-              Dataset(fns_in[0], 'r') as nc_in):
+        with Dataset(fn_out, 'w', format='NETCDF4_CLASSIC') as nc_out, Dataset(fns_in[0], 'r') as nc_in:
             # copy dimensions
             self.copy_dimensions(nc_in, nc_out)
 

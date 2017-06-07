@@ -119,8 +119,7 @@ class HTTPDownload(DownloadDriver):
     @staticmethod
     def download_file(url, fn):
         # download recipe from http://stackoverflow.com/a/7244263
-        with (closing(urlopen(url)) as resp,
-              open(os.path.expanduser(fn), 'wb') as out):
+        with closing(urlopen(url)) as resp, open(os.path.expanduser(fn), 'wb') as out:
             shutil.copyfileobj(resp, out)
 
     def get(self, species, fcinit, fcstart, fcend, fn_out):
