@@ -14,6 +14,77 @@ production), the emissions coming from CAMS emission (for anthropic emissions
 over Europe and for biomass burning).
 
 
+Available species
+=================
+
+The following species are available from CAMS regional data:
+
+=======  ===============
+Species  Parameter value
+=======  ===============
+CO       CO
+NH3      NH3
+NMVOC    NMVOC
+NO       NO
+NO2      NO2
+O3       O3
+PAN      PANS
+PM10     PM10
+PM2.5    PM25
+=======  ===============
+
+
+Configuration
+=============
+
+In order to download CAMS regional data, MSS-Chem must be configured as
+follows::
+
+   import os.path
+   
+   from msschem.models import CAMSRegDriver
+   from msschem.download import CAMSRegDownload
+   
+   register_datasources = {
+       'CAMSReg_ENSEMBLE': CAMSRegDriver(
+           dict(
+               dldriver=CAMSRegDownload(
+                   password='MYTOKEN',
+                   modelname='ENSEMBLE',
+                   n_tries=3),
+               force=False,
+               basepath=os.path.expanduser('~/tmp/mss/data/'),
+               name='CAMSReg-ENSEMBLE',
+               temppath=None,
+               species=['CO', 'NH3', 'NMVOC', 'NO2', 'NO', 'O3', 'PANS', 'PM10',
+                        'PM25', 'SO2'],
+           )
+       ),
+   }
+
+The ``modelname`` value in the ``CAMSRegDownload`` constructor must be set to
+model which shall be downloaded.  The following values are supported:
+
+- ``CHIMERE``
+- ``EMEP``
+- ``ENSEMBLE``
+- ``EURAD-IM``
+- ``LOTOS-EUROS``
+- ``MATCH``
+- ``MOCAGE``
+- ``SILAM``
+
+By default (i.e., if ``modelname`` is not specified), the ``ENSEMBLE`` will be
+downloaded.
+
+The ``password`` value in the ``CAMSRegDownload`` constructor must be set to the
+access token of the CAMS regional website (see below on how to obtain this
+token).
+
+The ``species`` value is a list of the *Parameter values* of all species which
+are to be downloaded (see above for a list of *Parameter value*s).
+
+
 Data access
 ===========
 
@@ -36,6 +107,10 @@ on "Accept license".  So this token is no secret!  The options (defined in the
                 'referencetime': '{fcinit:%Y-%m-%dT%H:%M:%SZ}',
                 'format': 'NETCDF',
                 'licence': 'yes'}
+
+
+Web service access (not used by MSS-Chem)
+-----------------------------------------
 
 For the web service, the user has to register.  However, the web service only
 offers downloading 2D fields.  In order to get the 4D fields needed by MSS
