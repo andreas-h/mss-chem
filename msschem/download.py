@@ -6,6 +6,8 @@ from collections import OrderedDict
 from contextlib import closing
 import datetime
 from ftplib import FTP, FTP_TLS
+from ftplib import all_errors as FTP_ALL_ERRORS
+import http.client
 import os.path
 import re
 import shutil
@@ -88,12 +90,6 @@ class FTPDownload(DownloadDriver):
                 '"construct_urls()" must be implemented for the "{}" class'
                 ''.format(self.__class__))
 
-    @staticmethod
-    def download_file(url, fn):
-        # download recipe from http://stackoverflow.com/a/7244263
-        with urlopen(url) as resp, open(os.path.expanduser(fn), 'wb') as out:
-            shutil.copyfileobj(resp, out)
-
     def filter_files(self, fns, species, fcinit, fcstart, fcend):
         """Filter a list of filenames for those relevant to this download
         """
@@ -112,7 +108,7 @@ class FTPDownload(DownloadDriver):
         self.conn.close()
         self.conn = None
 
-    def get(self, species, fcinit, fcstart, fcend, fn_out):
+    def get(self, species, fcinit, fcstart, fcend, fn_out, n_tries=1):
         """Download all files for a given species / init_time
 
         Parameters
@@ -147,9 +143,15 @@ class FTPDownload(DownloadDriver):
         outfiles = []
         for i, fn in enumerate(ftpfiles):
             fn_out = path + '_{:03d}'.format(i) + ext
-            with open(fn_out, 'wb') as fd:
-                # TODO make fault tolerant
-                self.conn.retrbinary('RETR {}'.format(fn), fd.write)
+            i_try = 0
+            while i_try < n_tries:
+                try:
+                    with open(fn_out, 'wb') as fd:
+                        self.conn.retrbinary('RETR {}'.format(fn), fd.write)
+                    break
+                except FTP_ALL_ERRORS:
+                    i_try += 1
+
             outfiles.append(fn_out)
 
         # close FTP connection
@@ -157,11 +159,13 @@ class FTPDownload(DownloadDriver):
 
         return outfiles
 
-    def __init__(self, host, passive=True, username=None, password=None):
+    def __init__(self, host, passive=True, username=None, password=None,
+                 n_tries=1):
         self.host = host
         self.passive = passive
         self.username = username
         self.password = password
+        self.n_tries = n_tries
 
 
 class HTTPDownload(DownloadDriver):
@@ -171,20 +175,32 @@ class HTTPDownload(DownloadDriver):
                 '"construct_urls()" must be implemented for the "{}" class'
                 ''.format(self.__class__))
 
-    @staticmethod
-    def download_file(url, fn):
-        # download recipe from http://stackoverflow.com/a/7244263
-        # TODO make fault tolerant
-        with closing(urlopen(url)) as resp, open(os.path.expanduser(fn), 'wb') as out:
-            shutil.copyfileobj(resp, out)
+    def __init__(self, username='', password='', n_tries=1, **kwargs):
+        self.password = password
+        self.n_tries = n_tries
+        for k, v in kwargs.items():
+            setattr(self, k, v)
 
-    def get(self, species, fcinit, fcstart, fcend, fn_out):
+    @staticmethod
+    def download_file(url, fn, n_tries=1):
+        # download recipe from http://stackoverflow.com/a/7244263
+        # retry recipe from https://stackoverflow.com/a/567645
+        i = 0
+        while i < n_tries:
+            try:
+                with closing(urlopen(url)) as resp, open(os.path.expanduser(fn), 'wb') as out:
+                    shutil.copyfileobj(resp, out)
+                break
+            except http.client.IncompleteRead:
+                i += 1
+
+    def get(self, species, fcinit, fcstart, fcend, fn_out, n_tries=1):
         urls = self.construct_urls(dict(species=species, fcinit=fcinit,
                                         fcstart=fcstart, fcend=fcend),
                                    os.path.expanduser(fn_out))
         fns = []
         for url, fn in urls:
-            self.download_file(url, fn)
+            self.download_file(url, fn, n_tries=n_tries)
             fns.append(fn)
         return fns
 
@@ -210,11 +226,11 @@ class CAMSRegDownload(HTTPDownload):
 
     # TODO implement check? available_from_time = datetime.time(11, 30)
 
-    def __init__(self, token='', modelname='ENSEMBLE'):
-        if modelname not in self._modelnames:
+    def __init__(self, username='', password='', n_tries=1, **kwargs):
+        super(CAMSRegDownload, self).__init__(username, password, n_tries,
+                                              **kwargs)
+        if self.modelname not in self._modelnames:
             raise ValueError()
-        self.modelname = modelname
-        self.token = token
 
     def construct_urls(self, params, fn_out):
         now = params['fcstart']
@@ -239,7 +255,7 @@ class CAMSRegDownload(HTTPDownload):
 
         urls = []
         params['model'] = self.modelname
-        params['token'] = self.token
+        params['token'] = self.password
         for step in fcrange:
             params['fcrange'] = step
             urlparams = {k: v.format(**params)

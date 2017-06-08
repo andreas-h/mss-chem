@@ -13,8 +13,9 @@ register_datasources = {
     'CAMSReg_ENSEMBLE': CAMSRegDriver(
         dict(
             dldriver=CAMSRegDownload(
-                token='MYTOKEN',
-                modelname='ENSEMBLE'),
+                password='MYTOKEN',
+                modelname='ENSEMBLE',
+                n_tries=3),
             force=False,
             basepath=os.path.expanduser('~/tmp/mss/data/'),
             name='CAMSReg-ENSEMBLE',
