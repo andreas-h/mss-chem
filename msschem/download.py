@@ -103,8 +103,10 @@ class FTPDownload(DownloadDriver):
         if self.conn is not None:  # TODO better test for working connection
             print('Connection already established')
             return
-        self.conn = self.ftpobj(self.host, self.username, self.password)
+        self.conn = self.ftpobj(self.host)
+        self.conn.set_debuglevel(0)  # TODO make this configurable
         self.conn.set_pasv(self.passive)
+        self.conn.login(self.username, self.password)
 
     def logout(self):
         self.conn.close()
