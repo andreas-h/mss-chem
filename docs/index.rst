@@ -19,6 +19,7 @@ Contents
    :maxdepth: 2
    :includehidden:
               
+   configuration
    models/index
    dev/architecture
    dev/tests

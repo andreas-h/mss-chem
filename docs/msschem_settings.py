@@ -6,9 +6,6 @@ from msschem.download import CAMSRegDownload
 from msschem.models.cams_global import CAMSGlobDriver
 from msschem.download import CAMSGlobDownload
 
-from msschem.models import EMEPDriver
-from msschem.download import FTPDownload
-
 from msschem.models import SilamDriver
 from msschem.download import SilamDownload
 
