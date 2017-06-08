@@ -1,5 +1,7 @@
 from __future__ import absolute_import
 
+from collections import OrderedDict
+import copy
 import datetime
 
 try:
@@ -122,6 +124,13 @@ class CAMSGlobDriver(CTMDriver):
     aggdim = 'time'
 
     # TODO How to handle two init times per day?
+
+    def get_dims(self, species):
+        dimsize = copy.deepcopy(self.dims)
+        if species == 'AIR_PRESSURE':  # air pressure doesn't have z dimension
+            dimsize = [(k, v) for k, v in dimsize if k != 'z']
+        dimsize = OrderedDict(dimsize)
+        return dimsize
 
     def fix_dataset(self, fn_out, species, fcinit):
         # read vertical coordinates

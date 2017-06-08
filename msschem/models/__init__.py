@@ -97,14 +97,14 @@ class CTMDriver(object):
             raise ValueError('cannot retrieve future forecast base times')
         return day
 
-    def check_download(self, fns, species, fcinit, fcstart, fcend, nt=None):
+    def get_dims(self, species):
         dimsize = copy.deepcopy(self.dims)
-        if species == 'AIR_PRESSURE':  # air pressure doesn't have z dimension
-            dimsize = [(k, v) for k, v in dimsize if k != 'z']
-        dimsize = OrderedDict(dimsize)
+        return OrderedDict(dimsize)
+
+    def check_download(self, fns, species, fcinit, fcstart, fcend, nt=None):
+        dimsize = self.get_dims(species)
         nt = self.get_nt(fcinit, fcstart, fcend)
         dimsize['t'] = nt
-
         varname = self.species[species]['varname']
         with MFDataset(fns, 'r', aggdim=self.aggdim) as nc:
             var = nc.variables[varname]
@@ -333,15 +333,27 @@ class SilamDriver(CTMDriver):
     fcstart_offset = datetime.timedelta(hours=1)
 
     # maximum forecast step relative to fcinit
-    fend_offset = datetime.timedelta(hours=120)
+    fcend_offset = datetime.timedelta(hours=120)
 
     # dimensions
     dims = [('t', None), ('z', 10), ('y', 420), ('x', 700)]
 
-    species = {'NO2': dict(varname='cnc_NO2_gas',
+    species = {'CO': dict(varname='cnc_CO_gas',
+                          urlname='cnc_CO_gas'),
+               'NO': dict(varname='cnc_NO_gas',
+                          urlname='cnc_NO_gas'),
+               'NO2': dict(varname='cnc_NO2_gas',
                            urlname='cnc_NO2_gas'),
-               'HCHO': dict(varname='cnc_HCHO_gas',
-                            urlname='cnc_HCHO_gas'),
+               'NMVOC': dict(varname='cnc_NMVOC_gas',
+                             urlname='cnc_NMVOC_gas'),
+               'O3': dict(varname='cnc_O3_gas',
+                          urlname='cnc_O3_gas'),
+               'PANS': dict(varname='cnc_PAN_gas',
+                            urlname='cnc_PAN_gas'),
+               'PM10': dict(varname='cnc_PM10',
+                            urlname='cnc_PM10'),
+               'SO2': dict(varname='cnc_SO2_gas',
+                           urlname='cnc_SO2_gas'),
                'AIR_PRESSURE': dict(varname='pressure',
                                     urlname='pressure'),
                'AIR_TEMPERATURE': dict(varname='temperature',
@@ -352,6 +364,8 @@ class SilamDriver(CTMDriver):
 
     concentration_type = 'mass'
     quantity_type = 'density'
+    layer_type = 'ml'
+    aggdim = 'time'
 
     def fix_dataset(self, fn_out, species, fcinit):
         with Dataset(fn_out, 'a', format='NETCDF4_CLASSIC') as nc:

@@ -85,11 +85,6 @@ class FTPDownload(DownloadDriver):
 
     conn = None
 
-    def construct_urls(self, params):
-        raise NotImplementedError(
-                '"construct_urls()" must be implemented for the "{}" class'
-                ''.format(self.__class__))
-
     def filter_files(self, fns, species, fcinit, fcstart, fcend):
         """Filter a list of filenames for those relevant to this download
         """
@@ -277,7 +272,7 @@ class SilamDownload(HTTPDownload):
                  'time_start': '{fcstart:%Y-%m-%dT%H:%M:%SZ}', ''
                  'time_end': '{fcend:%Y-%m-%dT%H:%M:%SZ}',
                  'timeStride': '1', 'vertStride': '1',
-                 'addLatLon': 'true', 'accept': 'netcdf4'}
+                 'addLatLon': 'true', 'accept': 'netcdf'}
 
     def construct_urls(self, params, fn_out):
         urlparams = {k: v.format(**params) for k, v in self.urlparams.items()}

@@ -9,6 +9,9 @@ from msschem.download import CAMSGlobDownload
 from msschem.models import EMEPDriver
 from msschem.download import FTPDownload
 
+from msschem.models import SilamDriver
+from msschem.download import SilamDownload
+
 register_datasources = {
     'CAMSReg_ENSEMBLE': CAMSRegDriver(
         dict(
@@ -38,18 +41,14 @@ register_datasources = {
                      'SO2'],
         )
     ),
-    'EMEP': EMEPDriver(
+    'SILAM': SilamDriver(
         dict(
-            dldriver=FTPDownload(
-                host='rasputin.iup.uni-bremen.de',
-                passive=False,
-                username='MYUSER',
-                password='MYPASSWORD'),
+            dldriver=SilamDownload(n_tries=1),
             force=False,
             basepath=os.path.expanduser('~/tmp/mss/data/'),
-            name='EMEP',
+            name='SILAM',
             temppath=None,
-            species=['NO2', 'PM25'],
+            species=['CO', 'NO2', 'NO', 'NMVOC', 'O3', 'PANS', 'PM10', 'SO2'],
         )
-    )
+    ),
 }
