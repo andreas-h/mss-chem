@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from collections import OrderedDict
+import copy
 import datetime
 import os.path
 import tempfile
@@ -11,7 +12,10 @@ import numpy as np
 # from .download import CAMSRegDownload, SilamDownload
 # from .version import __version__
 
-from .species import species_names
+#from .cams_global import CAMSGlobDriver
+from ..species import species_names
+
+#__all__ = ['CTMDriver', 'CAMSGlobDriver']
 
 
 """**************
@@ -94,12 +98,15 @@ class CTMDriver(object):
         return day
 
     def check_download(self, fns, species, fcinit, fcstart, fcend, nt=None):
-        dimsize = OrderedDict(self.dims)
+        dimsize = copy.deepcopy(self.dims)
+        if species == 'AIR_PRESSURE':  # air pressure doesn't have z dimension
+            dimsize = [(k, v) for k, v in dimsize if k != 'z']
+        dimsize = OrderedDict(dimsize)
         nt = self.get_nt(fcinit, fcstart, fcend)
         dimsize['t'] = nt
 
         varname = self.species[species]['varname']
-        with MFDataset(fns, 'r') as nc:
+        with MFDataset(fns, 'r', aggdim=self.aggdim) as nc:
             var = nc.variables[varname]
             for i, (k, v) in enumerate(dimsize.items()):
                 if var.shape[i] != v:
@@ -164,8 +171,14 @@ class CTMDriver(object):
             stdname = '{}_{}_of_{}_in_air'.format(
                     self.concentration_type, self.quantity_type,
                     species_names[species])
-        nc.variables[self.species[species]['varname']].setncattr(
-                'standard_name', stdname)
+        try:
+            nc.variables[self.species[species]['varname']].setncattr(
+                    'standard_name', stdname)
+        except KeyError:
+            if species == 'AIR_PRESSURE':
+                nc.variables['P'].setncattr('standard_name', stdname)
+            else:
+                raise
 
     def fix_dataset(self, fn_out, species, fcinit):
         raise NotImplementedError(
@@ -209,7 +222,7 @@ class CTMDriver(object):
                 nc_out.variables[name].setncattr(attr, var.__dict__[attr])
 
     def write_dataset(self, varname_species, fns_in, fn_out):
-        with Dataset(fn_out, 'w', format='NETCDF4_CLASSIC') as nc_out, MFDataset(fns_in, 'r') as nc_in:
+        with Dataset(fn_out, 'w', format='NETCDF4_CLASSIC') as nc_out, MFDataset(fns_in, 'r', aggdim=self.aggdim) as nc_in:
             # copy dimensions
             self.copy_dimensions(nc_in, nc_out)
 
@@ -248,29 +261,8 @@ class CTMDriver(object):
         return fcinit + fctime
 
     def get_nt(self, fcinit, fcstart, fcend):
-        return int((fcend - fcstart) / self.fcstep) + 1
-
-
-class CAMSGlobDriver(CTMDriver):
-
-    fcstep = datetime.timedelta(hours=3)
-
-    # offset of first forecast step relative to fcinit
-    fcstart_offset = datetime.timedelta(hours=0)
-
-    # maximum forecast step relative to fcinit
-    fcend_offset = datetime.timedelta(hours=120)
-
-    # dimensions
-    dims = [('t', None), ('z', 60), ('y', 451), ('x', 900)]
-
-    species = {'NO2': dict(varname='no2', urlname='no2'),
-               }
-
-    concentration_type = 'mass'
-    quantity_type = 'concentration'
-
-    # TODO How to handle two init times per day?
+        dt = (fcend - fcstart).total_seconds()
+        return int(dt / self.fcstep.total_seconds()) + 1
 
 
 class CAMSRegDriver(CTMDriver):
@@ -303,6 +295,7 @@ class CAMSRegDriver(CTMDriver):
     concentration_type = 'mass'
     quantity_type = 'concentration'
     layer_type = 'al'
+    aggdim = 'time'
 
     def get_nt(self, fcinit, fcstart, fcend):
         # CAMS Regional files have 25 steps for the first forecast day
@@ -415,6 +408,7 @@ class EMEPDriver(CTMDriver):
             nc.variables['time'].setncattr('standard_name', 'time')
             # set standard name of data variable
             self.set_standard_name(nc, species)
+            # TODO can we make a generic function for this?
             # calculate air pressure
             if species == 'AIR_PRESSURE':
                 a_ = nc.variables['hyam'][:]
@@ -437,6 +431,7 @@ class EMEPDriver(CTMDriver):
                 del nc.variables['PS']
 
     def write_dataset(self, varname_species, fns_in, fn_out):
+        # TODO make generic method more generic, to make special case obsolete
         with Dataset(fn_out, 'w', format='NETCDF4_CLASSIC') as nc_out, Dataset(fns_in[0], 'r') as nc_in:
             # copy dimensions
             self.copy_dimensions(nc_in, nc_out)

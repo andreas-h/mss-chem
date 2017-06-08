@@ -3,7 +3,7 @@ import os.path
 from msschem.models import CAMSRegDriver
 from msschem.download import CAMSRegDownload
 
-from msschem.models import CAMSGlobDriver
+from msschem.models.cams_global import CAMSGlobDriver
 from msschem.download import CAMSGlobDownload
 
 from msschem.models import EMEPDriver
@@ -33,6 +33,8 @@ register_datasources = {
             basepath=os.path.expanduser('~/tmp/mss/data/'),
             name='CAMSGlob',
             temppath=None,
+            species=['CO', 'O3', 'HCHO', 'HNO3', 'NO', 'NO2', 'OH', 'PANS',
+                     'SO2'],
         )
     ),
     'EMEP': EMEPDriver(

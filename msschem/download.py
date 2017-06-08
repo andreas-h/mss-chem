@@ -5,7 +5,7 @@ from __future__ import with_statement
 from collections import OrderedDict
 from contextlib import closing
 import datetime
-from ftplib import FTP
+from ftplib import FTP, FTP_TLS
 import os.path
 import re
 import shutil
@@ -81,26 +81,79 @@ class DownloadDriver(object):
 
 class FTPDownload(DownloadDriver):
 
+    conn = None
+
     def construct_urls(self, params):
         raise NotImplementedError(
                 '"construct_urls()" must be implemented for the "{}" class'
                 ''.format(self.__class__))
 
     @staticmethod
-    def download_files(url, fn):
+    def download_file(url, fn):
         # download recipe from http://stackoverflow.com/a/7244263
         with urlopen(url) as resp, open(os.path.expanduser(fn), 'wb') as out:
             shutil.copyfileobj(resp, out)
 
+    def filter_files(self, fns, species, fcinit, fcstart, fcend):
+        """Filter a list of filenames for those relevant to this download
+        """
+        raise NotImplementedError()
+
+    def login(self):
+        if self.conn is not None:  # TODO better test for working connection
+            print('Connection already established')
+            return
+        self.conn = self.ftpobj(self.host, self.username, self.password)
+        self.conn.set_pasv(self.passive)
+
+    def logout(self):
+        self.conn.close()
+        self.conn = None
+
     def get(self, species, fcinit, fcstart, fcend, fn_out):
-        urls = self.construct_urls(dict(species=species, fcinit=fcinit,
-                                        fcstart=fcstart, fcend=fcend),
-                                   os.path.expanduser(fn_out))
-        fns = []
-        for url, fn in urls:
-            self.download_file(url, fn)
-            fns.append(fn)
-        return fns
+        """Download all files for a given species / init_time
+
+        Parameters
+        ----------
+        fn_out : str
+            Dummy filename of output file.  For a value of
+            ``/PATH/TO/MYFILE.nc``, the actual output files will be called
+            ``/PATH/TO/MYFILE_NN.nc``, where ``_NN`` is a counter.
+
+        Returns
+        -------
+        fns : list of str
+            A list of all files which have been downloaded
+
+        """
+        # open FTP connection
+        self.login()
+
+        # change to correct directory
+        ftpdir = self.path.format(species=species, fcinit=fcinit, fcend=fcend)
+        self.conn.cwd(ftpdir)
+
+        # get a list of all files to retrieve
+        ftpallfiles = self.conn.nlst()
+        ftpfiles = self.filter_files(ftpallfiles, species, fcinit, fcstart,
+                                     fcend)
+
+        # prepare output filename construction
+        path, ext = os.path.splitext(fn_out)
+
+        # retrieve all files
+        outfiles = []
+        for i, fn in enumerate(ftpfiles):
+            fn_out = path + '_{:03d}'.format(i) + ext
+            with open(fn_out, 'wb') as fd:
+                # TODO make fault tolerant
+                self.conn.retrbinary('RETR {}'.format(fn), fd.write)
+            outfiles.append(fn_out)
+
+        # close FTP connection
+        self.logout()
+
+        return outfiles
 
     def __init__(self, host, passive=True, username=None, password=None):
         self.host = host
@@ -119,6 +172,7 @@ class HTTPDownload(DownloadDriver):
     @staticmethod
     def download_file(url, fn):
         # download recipe from http://stackoverflow.com/a/7244263
+        # TODO make fault tolerant
         with closing(urlopen(url)) as resp, open(os.path.expanduser(fn), 'wb') as out:
             shutil.copyfileobj(resp, out)
 
@@ -214,21 +268,29 @@ class SilamDownload(HTTPDownload):
 
 
 class CAMSGlobDownload(FTPDownload):
+    ftpobj = FTP
     host = "dissemination.ecmwf.int"
     path = '/DATA/CAMS_NREALTIME/{fcinit:%Y%m%d%H}'
-    fnpattern = ('z_cams_c_ecmf_{fcinit:%Y%m%d%H%M%S}_prod_{fctype}_{levtype}_'
-                 '(\d{3})_{species}.nc')
+    fnpattern = ('z_cams_c_ecmf_{fcinit:%Y%m%d%H%M%S}_prod_{fctype}_'
+                 '{layer_type}_(\d{{3}})_{species}.nc')
+    layer_type = 'ml'  # TODO make this configurable
+    fctype = 'fc'  # TODO make this configurable
 
-    def filter_files(self, fns, species, fcinit, fcstart, fcend, levtype,
-                     fctype):
+    def filter_files(self, fns, species, fcinit, fcstart, fcend):
+        manifest = 'z_cams_c_ecmf_{:%Y%m%d%H}0000_prod.manifest'.format(fcinit)
+        if manifest not in fns:
+            raise ValueError('Manifest file doesn\'t exist yet')
         allfiles = {}
-        pattern = self.fnpattern.format(fcinit=fcinit, fctype=fctype,
-                                        levtype=levtype, species=species)
+        pattern = self.fnpattern.format(fcinit=fcinit, fctype=self.fctype,
+                                        layer_type=self.layer_type,
+                                        species=species)
         for fn in fns:
             m = re.match(pattern, fn)
             if m:
                 allfiles[m.group(1)] = fn
         files = OrderedDict(sorted(allfiles.items(), key=lambda t: t[0]))
 
-        return [f for t, f in files.items()
-                if fcstart <= fcinit + datetime.timedelta(hours=t) <= fcend]
+        result = [f for t, f in files.items()
+                  if fcstart <= fcinit + datetime.timedelta(hours=int(t))
+                             <= fcend]
+        return result

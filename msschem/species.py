@@ -43,11 +43,13 @@ NOTES
 
 species_names = {'CO': 'carbon_monoxide',
                  'CO2': 'carbon_dioxide',
+                 'HCHO': 'formaldehyde',
                  'NH3': 'ammonia',
                  'NMVOC': 'nmvoc_expressed_as_carbon',
                  'NO': 'nitrogen_monoxide',
                  'NO2': 'nitrogen_dioxide',
                  'O3': 'ozone',
+                 'OH': 'hydroxyl',
                  'PANS': 'peroxyacetyl_nitrate',
                  'PM10': 'pm10_ambient_aerosol',
                  'PM25': 'pm2p5_ambient_aerosol',
