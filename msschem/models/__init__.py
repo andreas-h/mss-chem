@@ -351,7 +351,7 @@ class CAMSRegDriver(CTMDriver):
     needed_vars = ['longitude', 'latitude', 'level', 'time']
 
     concentration_type = 'mass'
-    quantity_type = 'concentration'
+    quantity_type = 'density'
     layer_type = 'al'
     aggdim = 'time'
     name = 'CAMS_regional'
