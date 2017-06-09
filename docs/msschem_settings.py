@@ -9,7 +9,7 @@ from msschem.download import CAMSGlobDownload
 from msschem.models import SilamDriver
 from msschem.download import SilamDownload
 
-register_datasources = {
+datasources = {
     'CAMSReg_ENSEMBLE': CAMSRegDriver(
         dict(
             dldriver=CAMSRegDownload(

@@ -2,16 +2,26 @@
 
 from __future__ import print_function
 
+import argparse
 import datetime
 import logging
-
-import msschem_settings
+import os.path
+import runpy
 
 VERBOSE = True
 QUIET = False
 
 # TODO allow parallel download of different models
 # TODO allow parallel download of species (??)
+
+
+def _valid_date(s):
+    try:
+        return datetime.datetime.strptime(s, "%Y-%m-%d").date()
+    except ValueError:
+        msg = "Not a valid date: '{0}'.".format(s)
+        raise argparse.ArgumentTypeError(msg)
+
 
 def _setup_logging(level):
     log = logging.getLogger('msschem')
@@ -23,16 +33,67 @@ def _setup_logging(level):
     log.addHandler(ch)
 
 
-if __name__ == '__main__':
-    if VERBOSE:
-        loglevel = logging.DEBUG
-    elif QUIET:
-        loglevel = logging.ERROR
-    else:
-        loglevel = logging.WARN
-    _setup_logging(loglevel)
-    today = datetime.date.today()
-    fcinit = datetime.datetime(today.year, today.month, today.day)
+def _setup_argparse():
+    parser = argparse.ArgumentParser(description='MSS-Chem downloader')
+    datagroup = parser.add_mutually_exclusive_group(required=True)
+    datagroup.add_argument('-m', '--model', type=str, default='',
+                           help='model to download')
+    datagroup.add_argument('-a', '--all', action='store_true',
+                           help='download data from all configured models')
 
-    for name, driver in msschem_settings.register_datasources.items():
+    parser.add_argument('-d', '--date', type=_valid_date,
+                        default=datetime.date.today(),
+                        help='date to download data for (YYYY-MM-DD)')
+
+    parser.add_argument('-c', '--config', type=str,
+                        default='',
+                        help='MSS-Chem configuration file')
+
+    loggroup = parser.add_mutually_exclusive_group()
+    loggroup.add_argument('-q', '--quiet', action='store_true',
+                          help='no output (unless in case of error)')
+    loggroup.add_argument('-v', '--verbosity', action='count', default=0,
+                          help='increase output verbosity')
+
+    return parser
+
+
+def _setup_msschem(configfile):
+    if configfile:
+        if os.path.isfile(configfile):
+            try:
+                cfg = runpy.run_path(configfile)['datasources']
+            except:
+                raise ValueError('Cannot read configuration from file {}'
+                                 ''.format(configfile))
+        else:
+            raise IOError('Configuration file {} does not exist'
+                          ''.format(configfile))
+    else:
+        from msschem_settings import datasources as cfg
+    return cfg
+
+
+if __name__ == '__main__':
+    parser = _setup_argparse()
+    args = parser.parse_args()
+
+    if args.verbosity > 1:
+        loglevel = logging.DEBUG
+    elif args.verbosity == 1:
+        loglevel = logging.INFO
+    elif not args.quiet:
+        loglevel = logging.WARN
+    else:
+        loglevel = logging.ERROR
+    _setup_logging(loglevel)
+
+    fcinit = datetime.datetime(args.date.year, args.date.month, args.date.day)
+
+    datasources = _setup_msschem(args.config)
+
+    if args.model:
+        datasources[args.model].run(fcinit)
+
+    for driver in datasources.values():
         driver.run(fcinit)
