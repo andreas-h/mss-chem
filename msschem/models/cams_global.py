@@ -122,6 +122,7 @@ class CAMSGlobDriver(CTMDriver):
     quantity_type = 'concentration'
     layer_type = 'ml'
     aggdim = 'time'
+    name = 'CAMS_global'
 
     # TODO How to handle two init times per day?
 

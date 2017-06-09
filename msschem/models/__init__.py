@@ -3,6 +3,7 @@
 from collections import OrderedDict
 import copy
 import datetime
+import logging
 import os.path
 import tempfile
 
@@ -14,6 +15,8 @@ import numpy as np
 
 #from .cams_global import CAMSGlobDriver
 from ..species import species_names
+from ..fileutils import touch
+from .. import DataNotAvailable
 
 #__all__ = ['CTMDriver', 'CAMSGlobDriver']
 
@@ -69,6 +72,7 @@ class CTMDriver(object):
     datavar_attrs_no_copy = ['_FillValue']
 
     def __init__(self, cfg):
+        self.log = logging.getLogger('msschem')
         if cfg.get('force') is None:
             cfg['force'] = False
         if cfg.get('temppath') is None:
@@ -140,11 +144,65 @@ class CTMDriver(object):
         self.check_download(fns, species, fcinit, fcstart, fcend)
         return fns
 
+    def run(self, day):
+        """Download all configured data for one day"""
+        self.log.info('Starting {}: init_time {:%Y-%m-%dT%H:%M:%S}'.format(
+                self.name, day))
+        all_species = self.cfg['species']
+
+        if not all_species:
+            self.log.info('    ... no species requested')
+            return
+
+        target_dir = os.path.dirname(self.output_filename(all_species[0], day))
+        lockfile = os.path.join(target_dir, 'msschem.lock')
+        donefile = os.path.join(target_dir, 'msschem.done')
+
+        if not os.path.isdir(target_dir):
+            os.makedirs(target_dir)
+
+        # check if donefile exists
+        if os.path.isfile(donefile):
+            # TODO add option to re-download
+            self.log.info('{}/{:%Y%m%d} already downloaded.'.format(self.name,
+                                                                    day))
+            return
+
+        # check if lockfile exists
+        if os.path.isfile(lockfile):
+            self.log.info('{}/{:%Y%m%d} lockfile exists. Aborting.'
+                          ''.format(self.name, day))
+            return
+
+        # create lockfile
+        touch(lockfile)
+
+        # TODO add option to download in parallel, only for http
+        # start processing this model
+        for species in all_species:
+            try:
+                self.get(species, day)
+            except DataNotAvailable:
+                self.log.warning('No data available {}/{:%Y%m%d}'.format(
+                        self.name, day))
+                break
+
+        if os.path.isfile(lockfile):
+            os.remove(lockfile)
+
+        touch(donefile)
+        self.log.info('Finished {}: init_time {:%Y-%m-%dT%H:%M:%S}'.format(
+                self.name, day))
+
     def get(self, species, fcinit, fcend=None, fcstart=None):
+        self.log.debug('Starting {}/{:%Y%m%d}:{}'.format(
+                self.name, fcinit, species))
         fns_temp = self.download(species, fcinit, fcend, fcstart)
         self.postprocess(species, fcinit, fns_temp)
         for fn in fns_temp:
             os.remove(fn)
+        self.log.debug('Finished {}/{:%Y%m%d}:{}'.format(
+                self.name, fcinit, species))
 
     def output_filename(self, species, fcinit):
         outdir = os.path.join(self.cfg['basepath'], self.cfg['name'],
@@ -296,6 +354,7 @@ class CAMSRegDriver(CTMDriver):
     quantity_type = 'concentration'
     layer_type = 'al'
     aggdim = 'time'
+    name = 'CAMS_regional'
 
     def get_nt(self, fcinit, fcstart, fcend):
         # CAMS Regional files have 25 steps for the first forecast day
@@ -366,6 +425,7 @@ class SilamDriver(CTMDriver):
     quantity_type = 'density'
     layer_type = 'ml'
     aggdim = 'time'
+    name = 'SILAM'
 
     def fix_dataset(self, fn_out, species, fcinit):
         with Dataset(fn_out, 'a', format='NETCDF4_CLASSIC') as nc:
@@ -410,6 +470,8 @@ class EMEPDriver(CTMDriver):
 
     concentration_type = 'mass'
     quantity_type = 'density'
+
+    name = 'EMEP'
 
     def fix_dataset(self, fn_out, species, fcinit):
         with Dataset(fn_out, 'a', format='NETCDF4_CLASSIC') as nc:

@@ -15,9 +15,13 @@ import shutil
 try:  # Py2
     from urllib import urlencode
     from urllib2 import urlopen
+    from urllib2 import HTTPError
 except ImportError:  # Py3
     from urllib.parse import urlencode
     from urllib.request import urlopen
+    from urllib.error import HTTPError
+
+from . import DataNotAvailable
 
 
 """****************
@@ -124,7 +128,10 @@ class FTPDownload(DownloadDriver):
 
         # change to correct directory
         ftpdir = self.path.format(species=species, fcinit=fcinit, fcend=fcend)
-        self.conn.cwd(ftpdir)
+        try:
+            self.conn.cwd(ftpdir)
+        except FTP_ALL_ERRORS as err:
+            raise DataNotAvailable
 
         # get a list of all files to retrieve
         ftpallfiles = self.conn.nlst()
@@ -195,8 +202,14 @@ class HTTPDownload(DownloadDriver):
                                    os.path.expanduser(fn_out))
         fns = []
         for url, fn in urls:
-            self.download_file(url, fn, n_tries=n_tries)
-            fns.append(fn)
+            try:
+                self.download_file(url, fn, n_tries=n_tries)
+                fns.append(fn)
+            except HTTPError as err:
+                if err.code == 404:
+                    raise DataNotAvailable
+                else:
+                    raise
         return fns
 
 
