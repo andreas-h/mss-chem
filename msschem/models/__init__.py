@@ -185,7 +185,9 @@ class CTMDriver(object):
             except DataNotAvailable:
                 self.log.warning('No data available {}/{:%Y%m%d}'.format(
                         self.name, day))
-                break
+                if os.path.isfile(lockfile):
+                    os.remove(lockfile)
+                return
 
         if os.path.isfile(lockfile):
             os.remove(lockfile)

@@ -305,7 +305,7 @@ class CAMSGlobDownload(FTPDownload):
     def filter_files(self, fns, species, fcinit, fcstart, fcend):
         manifest = 'z_cams_c_ecmf_{:%Y%m%d%H}0000_prod.manifest'.format(fcinit)
         if manifest not in fns:
-            raise ValueError('Manifest file doesn\'t exist yet')
+            raise DataNotAvailable('Manifest file doesn\'t exist yet')
         allfiles = {}
         pattern = self.fnpattern.format(fcinit=fcinit, fctype=self.fctype,
                                         layer_type=self.layer_type,
