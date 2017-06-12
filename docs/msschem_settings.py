@@ -6,6 +6,9 @@ from msschem.download import CAMSRegDownload
 from msschem.models.cams_global import CAMSGlobDriver
 from msschem.download import CAMSGlobDownload
 
+from msschem.models import EMEPDriver
+from msschem.download import FTPDownload
+
 from msschem.models import SilamDriver
 from msschem.download import SilamDownload
 
@@ -13,7 +16,7 @@ datasources = {
     'CAMSReg_ENSEMBLE': CAMSRegDriver(
         dict(
             dldriver=CAMSRegDownload(
-                password='MYTOKEN',
+                password='__M0bChV6QsoOFqHz31VRqnpr4GhWPtcpaRy3oeZjBNSg__',
                 modelname='ENSEMBLE',
                 n_tries=3),
             force=False,
@@ -27,9 +30,10 @@ datasources = {
     'CAMSGlob': CAMSGlobDriver(
         dict(
             dldriver=CAMSGlobDownload(
-                username="MYUSER",
-                password="MYPASSWORD",
-                host="dissemination.ecmwf.int"),
+                username="andreas.hilboll",
+                password="bMmGkpWn",
+                host="dissemination.ecmwf.int",
+                n_tries=1),
             force=False,
             basepath=os.path.expanduser('~/tmp/mss/data/'),
             name='CAMSGlob',
@@ -48,4 +52,18 @@ datasources = {
             species=['CO', 'NO2', 'NO', 'NMVOC', 'O3', 'PANS', 'PM10', 'SO2'],
         )
     ),
+    #'EMEP': EMEPDriver(
+    #    dict(
+    #        dldriver=FTPDownload(
+    #            host='rasputin.iup.uni-bremen.de',
+    #            passive=False,
+    #            username='MYUSER',
+    #            password='MYPASSWORD'),
+    #        force=False,
+    #        basepath=os.path.expanduser('~/tmp/mss/data/'),
+    #        name='EMEP',
+    #        temppath=None,
+    #        species=['NO2', 'PM25'],
+    #    )
+    #)
 }

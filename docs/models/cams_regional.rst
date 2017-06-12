@@ -82,7 +82,7 @@ access token of the CAMS regional website (see below on how to obtain this
 token).
 
 The ``species`` value is a list of the *Parameter values* of all species which
-are to be downloaded (see above for a list of *Parameter value*s).
+are to be downloaded (see above for a list of *Parameter value* s).
 
 
 Data access
