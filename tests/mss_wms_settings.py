@@ -53,7 +53,7 @@ if mpl_hsec_styles is not None:
 #        (mpl_hsec_styles.HS_DivStyle_PL_01, ["ecmwf_EUR_LL015"]),
         # CAMS Regional standard pressure level products.
         (mpl_hsec_styles.HS_MSSChemStyle_AL_NO2_mconc, ["CAMSregENS"]),
-        (mpl_hsec_styles.HS_MSSChemStyle_AL_NO2_mfrac, ["CAMSglb"]),
+        (mpl_hsec_styles.HS_MSSChemStyle_ML_NO2_mfrac, ["CAMSglb"]),
         (mpl_hsec_styles.HS_MSSChemStyle_AL_NO2_mconc, ["SILAM"]),
         # CAMS Global standard model level products.
 #        (mpl_hsec_styles.HS_MSSChemStyle_ML_NO2_mfrac, ["CAMSglb"]),
@@ -81,7 +81,7 @@ if mpl_vsec_styles is not None:
 #        (mpl_vsec_styles.VS_TemperatureStyle_01, ["ecmwf_EUR_LL015"]),
         # CAMS Regional standard altitude level products.
         (mpl_vsec_styles.VS_MSSChemStyle_AL_NO2_mconc, ["CAMSregENS"]),
-        (mpl_vsec_styles.VS_MSSChemStyle_AL_NO2_mfrac, ["CAMSglb"]),
+        (mpl_vsec_styles.VS_MSSChemStyle_ML_NO2_mfrac, ["CAMSglb"]),
         (mpl_vsec_styles.VS_MSSChemStyle_AL_NO2_mconc, ["SILAM"]),
         # CAMS Global standard model level products.
 #        (mpl_vsec_styles.VS_MSSChemStyle_ML_NO2_mfrac, ["CAMSglb"]),
