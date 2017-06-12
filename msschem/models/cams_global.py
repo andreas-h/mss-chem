@@ -119,7 +119,7 @@ class CAMSGlobDriver(CTMDriver):
     needed_vars = ['longitude', 'latitude', 'level', 'time']
 
     concentration_type = 'mass'
-    quantity_type = 'concentration'
+    quantity_type = 'fraction'
     layer_type = 'ml'
     aggdim = 'time'
     name = 'CAMS_global'

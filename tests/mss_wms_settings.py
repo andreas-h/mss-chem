@@ -15,13 +15,13 @@ _datapath = os.path.join(os.path.expanduser("~"), "tmp", "mss", "data")
 nwpaccess = {
 #    "ecmwf_EUR_LL015": mslib.mswms.dataaccess.ECMWFDataAccess(os.path.join(_datapath, "ecmwf"), "EUR_LL015"),
     "CAMSglb": mslib.mswms.dataaccess.MSSChemDataAccess(
-            os.path.join(_datapath, "cams_global"),
+            os.path.join(_datapath, "CAMSGlob"),
             "CAMSglob", "cams-global", "ml"),
     "CAMSregENS": mslib.mswms.dataaccess.MSSChemDataAccess(
             os.path.join(_datapath, "CAMSReg-ENSEMBLE"),
             "CAMSregENS", "CAMSReg-ENSEMBLE", "al"),
     "SILAM": mslib.mswms.dataaccess.MSSChemDataAccess(
-            os.path.join(_datapath, "silam"),
+            os.path.join(_datapath, "SILAM"),
             "SILAM", "SILAM", "al"),
 #            "CAMSregENS", "cams-regional", "al"),
 }
@@ -53,6 +53,8 @@ if mpl_hsec_styles is not None:
 #        (mpl_hsec_styles.HS_DivStyle_PL_01, ["ecmwf_EUR_LL015"]),
         # CAMS Regional standard pressure level products.
         (mpl_hsec_styles.HS_MSSChemStyle_AL_NO2_mconc, ["CAMSregENS"]),
+        (mpl_hsec_styles.HS_MSSChemStyle_AL_NO2_mfrac, ["CAMSglb"]),
+        (mpl_hsec_styles.HS_MSSChemStyle_AL_NO2_mconc, ["SILAM"]),
         # CAMS Global standard model level products.
 #        (mpl_hsec_styles.HS_MSSChemStyle_ML_NO2_mfrac, ["CAMSglb"]),
 #        (mpl_hsec_styles.HS_MSSChemStyle_ML_NO2_mfrac, ["CAMSglb"]),
@@ -79,6 +81,8 @@ if mpl_vsec_styles is not None:
 #        (mpl_vsec_styles.VS_TemperatureStyle_01, ["ecmwf_EUR_LL015"]),
         # CAMS Regional standard altitude level products.
         (mpl_vsec_styles.VS_MSSChemStyle_AL_NO2_mconc, ["CAMSregENS"]),
+        (mpl_vsec_styles.VS_MSSChemStyle_AL_NO2_mfrac, ["CAMSglb"]),
+        (mpl_vsec_styles.VS_MSSChemStyle_AL_NO2_mconc, ["SILAM"]),
         # CAMS Global standard model level products.
 #        (mpl_vsec_styles.VS_MSSChemStyle_ML_NO2_mfrac, ["CAMSglb"]),
     ]

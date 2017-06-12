@@ -351,7 +351,7 @@ class CAMSRegDriver(CTMDriver):
     needed_vars = ['longitude', 'latitude', 'level', 'time']
 
     concentration_type = 'mass'
-    quantity_type = 'density'
+    quantity_type = 'concentration'
     layer_type = 'al'
     aggdim = 'time'
     name = 'CAMS_regional'
@@ -422,7 +422,7 @@ class SilamDriver(CTMDriver):
     needed_vars = ['lon', 'lat', 'height', 'time']
 
     concentration_type = 'mass'
-    quantity_type = 'density'
+    quantity_type = 'concentration'
     layer_type = 'ml'
     aggdim = 'time'
     name = 'SILAM'
@@ -469,7 +469,7 @@ class EMEPDriver(CTMDriver):
     needed_vars = ['lon', 'lat', 'lev', 'hyam', 'hybm', 'time']
 
     concentration_type = 'mass'
-    quantity_type = 'density'
+    quantity_type = 'concentration'
 
     name = 'EMEP'
 
