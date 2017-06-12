@@ -35,31 +35,33 @@ def _setup_logging(level):
 
 def _setup_argparse():
     parser = argparse.ArgumentParser(description='MSS-Chem downloader')
+
     datagroup = parser.add_mutually_exclusive_group(required=True)
     datagroup.add_argument('-m', '--model', type=str, default='',
-                           help='model to download')
+                           help='Model to download')
     datagroup.add_argument('-a', '--all', action='store_true',
-                           help='download data from all configured models')
+                           help='Download data from all configured models')
 
     parser.add_argument('-d', '--date', type=_valid_date,
                         default=datetime.date.today(),
-                        help='date to download data for (YYYY-MM-DD)')
+                        help='Date to download data for (YYYY-MM-DD)')
 
-    parser.add_argument('-c', '--config', type=str,
-                        default='',
+    parser.add_argument('-c', '--config', type=str, default='',
                         help='MSS-Chem configuration file')
 
     loggroup = parser.add_mutually_exclusive_group()
     loggroup.add_argument('-q', '--quiet', action='store_true',
-                          help='no output (unless in case of error)')
+                          help='No output except for errors')
     loggroup.add_argument('-v', '--verbosity', action='count', default=0,
-                          help='increase output verbosity')
+                          help='Increase output verbosity (can be supplied '
+                               'multiple times)')
 
     return parser
 
 
-def _setup_msschem(configfile):
+def read_config(configfile):
     if configfile:
+        configfile = os.path.expanduser(configfile)
         if os.path.isfile(configfile):
             try:
                 cfg = runpy.run_path(configfile)['datasources']
@@ -90,7 +92,7 @@ if __name__ == '__main__':
 
     fcinit = datetime.datetime(args.date.year, args.date.month, args.date.day)
 
-    datasources = _setup_msschem(args.config)
+    datasources = read_config(args.config)
 
     if args.model:
         datasources[args.model].run(fcinit)
