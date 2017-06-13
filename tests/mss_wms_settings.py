@@ -16,7 +16,7 @@ nwpaccess = {
 #    "ecmwf_EUR_LL015": mslib.mswms.dataaccess.ECMWFDataAccess(os.path.join(_datapath, "ecmwf"), "EUR_LL015"),
     "CAMSglb": mslib.mswms.dataaccess.MSSChemDataAccess(
             os.path.join(_datapath, "CAMSGlob"),
-            "CAMSglob", "cams-global", "ml"),
+            "CAMSglob", "CAMSGlob", "ml"),
     "CAMSregENS": mslib.mswms.dataaccess.MSSChemDataAccess(
             os.path.join(_datapath, "CAMSReg-ENSEMBLE"),
             "CAMSregENS", "CAMSReg-ENSEMBLE", "al"),
