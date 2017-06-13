@@ -117,6 +117,7 @@ class CAMSGlobDriver(CTMDriver):
                }
 
     needed_vars = ['longitude', 'latitude', 'level', 'time']
+    datavar_attrs_no_copy = ['add_offset', 'scale_factor']
 
     concentration_type = 'mass'
     quantity_type = 'fraction'
