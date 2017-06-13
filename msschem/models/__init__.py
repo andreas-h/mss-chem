@@ -69,7 +69,7 @@ class CTMDriver(object):
 
     needed_vars = []
 
-    datavar_attrs_no_copy = ['_FillValue']
+    datavar_attrs_no_copy = ['_FillValue', 'add_offset', 'scale_factor']
 
     def __init__(self, cfg):
         self.log = logging.getLogger('msschem')
