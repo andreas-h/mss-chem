@@ -44,6 +44,7 @@ NOTES
 species_names = {'CO': 'carbon_monoxide',
                  'CO2': 'carbon_dioxide',
                  'HCHO': 'formaldehyde',
+                 'HNO3': 'nitric_acid',
                  'NH3': 'ammonia',
                  'NMVOC': 'nmvoc_expressed_as_carbon',
                  'NO': 'nitrogen_monoxide',
