@@ -154,12 +154,15 @@ class CAMSGlobDriver(CTMDriver):
                 # calculate air_pressure
                 p_ = (hyam[np.newaxis, :, np.newaxis, np.newaxis] +
                       hybm[np.newaxis, :, np.newaxis, np.newaxis] *
-                      ps_[:, np.newaxis, :, :])  # TODO check units
-                # TODO check if 'level', 'latitude', 'longitude' is okay
-                # write air_pressure to file
+                      np.exp(ps_[:, np.newaxis, :, :]))
+                # create 'level' variable
                 nc.createDimension('level', hyn.size)
+                v_lev = nc.createVariable( 'level', np.int32, ('level', ))
+                v_lev[:] = np.arange(1, 61, 1, dtype='int32')
+                # write air_pressure to file
                 nc.createVariable(
-                    'P', np.float32, ('time', 'level', 'latitude', 'longitude'),
+                    'P', np.float32,
+                    ('time', 'level', 'latitude', 'longitude'),
                     zlib=True, complevel=6, shuffle=True, fletcher32=True)
                 nc.variables['P'][:] = p_.astype('float32')
                 # set air_pressure attributes
@@ -189,9 +192,7 @@ class CAMSGlobDriver(CTMDriver):
             v_bm.setncattr('standard_name',
                            'atmosphere_hybrid_height_coordinate')
 
-            v_lev = nc.createVariable('level', np.int32, ('level', ))
-            v_lev[:] = np.arange(1, 61)
-            v_lev.setncattr('standard_name', 'model_level_number')
+            nc.variables['level'].setncattr('standard_name', 'model_level_number')
 
             for var in ['time', 'latitude', 'longitude']:
                 nc.variables[var].setncattr('standard_name', var)
