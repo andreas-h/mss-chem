@@ -113,6 +113,8 @@ class CAMSGlobDriver(CTMDriver):
                'OH': dict(varname='oh', urlname='oh'),
                'PANS': dict(varname='pan', urlname='pan'),
                'SO2': dict(varname='so2', urlname='so2'),
+               # we need ln(surface_air_pressure) to derive 'air_pressure'
+               # in fix_dataset() method
                'AIR_PRESSURE': dict(varname='lnsp', urlname='lnsp'),
                }
 
@@ -157,9 +159,9 @@ class CAMSGlobDriver(CTMDriver):
                 # write air_pressure to file
                 nc.createDimension('level', hyn.size)
                 nc.createVariable(
-                    'P', p_.dtype, ('time', 'level', 'latitude', 'longitude'),
+                    'P', np.float32, ('time', 'level', 'latitude', 'longitude'),
                     zlib=True, complevel=6, shuffle=True, fletcher32=True)
-                nc.variables['P'][:] = p_
+                nc.variables['P'][:] = p_.astype('float32')
                 # set air_pressure attributes
                 nc.variables['P'].setncattr('standard_name', 'air_pressure')
                 nc.variables['P'].setncattr('units', 'Pa')
@@ -186,6 +188,10 @@ class CAMSGlobDriver(CTMDriver):
             v_bm.setncattr('units', '1')
             v_bm.setncattr('standard_name',
                            'atmosphere_hybrid_height_coordinate')
+
+            v_lev = nc.createVariable('level', np.int32, ('level', ))
+            v_lev[:] = np.arange(1, 61)
+            v_lev.setncattr('standard_name', 'model_level_number')
 
             for var in ['time', 'latitude', 'longitude']:
                 nc.variables[var].setncattr('standard_name', var)
