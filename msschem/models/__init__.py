@@ -425,7 +425,7 @@ class SilamDriver(CTMDriver):
 
     concentration_type = 'mass'
     quantity_type = 'concentration'
-    layer_type = 'ml'
+    layer_type = 'al'
     aggdim = 'time'
     name = 'SILAM'
 
@@ -438,6 +438,8 @@ class SilamDriver(CTMDriver):
             nc.variables['time'][:] = date2num(t_obj, t_unit)
             nc.variables['time'].setncattr('units', t_unit)
             nc.variables['time'].setncattr('standard_name', 'time')
+            nc.variables['height'].setncattr('standard_name',
+                                             'atmosphere_altitude_coordinate')
             # set standard name of data variable
             self.set_standard_name(nc, species)
 
