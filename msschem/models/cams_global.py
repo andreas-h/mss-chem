@@ -154,12 +154,12 @@ class CAMSGlobDriver(CTMDriver):
                 # calculate air_pressure
                 p_ = (hyam[np.newaxis, :, np.newaxis, np.newaxis] +
                       hybm[np.newaxis, :, np.newaxis, np.newaxis] *
-                      ps_[:, np.newaxis, :, :])  # TODO check units
-                # TODO check if 'level', 'latitude', 'longitude' is okay
+                      np.exp(ps_[:, np.newaxis, :, :]))
                 # write air_pressure to file
                 nc.createDimension('level', hyn.size)
                 nc.createVariable(
-                    'P', np.float32, ('time', 'level', 'latitude', 'longitude'),
+                    'P', np.float32,
+                    ('time', 'level', 'latitude', 'longitude'),
                     zlib=True, complevel=6, shuffle=True, fletcher32=True)
                 nc.variables['P'][:] = p_.astype('float32')
                 # set air_pressure attributes
