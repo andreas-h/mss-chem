@@ -7,6 +7,7 @@ import datetime
 import logging
 import os.path
 import runpy
+import sys
 
 VERBOSE = True
 QUIET = False
@@ -96,6 +97,8 @@ if __name__ == '__main__':
 
     if args.model:
         datasources[args.model].run(fcinit)
+        sys.exit(0)
 
     for driver in datasources.values():
         driver.run(fcinit)
+        sys.exit(0)
