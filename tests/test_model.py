@@ -10,6 +10,7 @@ import msschem_settings
 class TestCAMSRegDriver(unittest.TestCase):
 
     def setUp(self):
+        raise
         self.driver = msschem_settings.register_datasources['CAMSReg_ENSEMBLE']
 
     def test_get_nt(self):

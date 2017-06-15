@@ -3,8 +3,10 @@
 from collections import OrderedDict
 import copy
 import datetime
+import glob
 import logging
 import os.path
+import shutil
 import tempfile
 
 from netCDF4 import Dataset, MFDataset, date2num, num2date
@@ -195,6 +197,31 @@ class CTMDriver(object):
         touch(donefile)
         self.log.info('Finished {}: init_time {:%Y-%m-%dT%H:%M:%S}'.format(
                 self.name, day))
+
+    def prune(self, n_days):
+        """Clean up old files downloaded for this model"""
+        self.log.debug('Cleanup {} (n_days={})'.format(self.name, n_days))
+        date_threshold = datetime.date.today() - datetime.timedelta(n_days)
+
+        # TODO get list of all existing date directories
+        # each date is a tuple (datetime.date, path)
+
+        outdir = os.path.join(self.cfg['basepath'], self.cfg['name'])
+        paths = glob.glob(os.path.join(outdir, '*'))
+        dates = [datetime.datetime.strptime(p, '%Y-%m-%d_%H').date()
+                 for p in paths]
+
+        if not len(paths):
+            self.log.info('No data to cleanup for {} (n_days={})'.format(
+                    self.name, n_days))
+            return
+
+        for date, path in zip(dates, paths):
+            if date < date_threshold:
+                self.log.error(path)
+                self.log.info('Removing {:%Y-%m-%d} ({})'.format(date,
+                                                                 self.name))
+                # TODO shutil.rmtree(path)
 
     def get(self, species, fcinit, fcend=None, fcstart=None):
         self.log.debug('Starting {}/{:%Y%m%d}:{}'.format(
