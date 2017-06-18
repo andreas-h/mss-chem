@@ -11,7 +11,8 @@ import mslib.mswms
 _vt_cache = os.path.join(os.path.expanduser("~"), "tmp", "mss", "vt_cache")
 mslib.mswms.dataaccess.valid_time_cache = _vt_cache
 
-_datapath = os.path.join(os.path.expanduser("~"), "tmp", "mss", "data")
+#_datapath = os.path.join(os.path.expanduser("~"), "tmp", "mss", "data")
+_datapath = '/misc/gomzo2/home2/hilboll/prj/2017_emerge/mss-data/'
 nwpaccess = {
 #    "ecmwf_EUR_LL015": mslib.mswms.dataaccess.ECMWFDataAccess(os.path.join(_datapath, "ecmwf"), "EUR_LL015"),
     "CAMSglb": mslib.mswms.dataaccess.MSSChemDataAccess(
@@ -53,8 +54,8 @@ if mpl_hsec_styles is not None:
 #        (mpl_hsec_styles.HS_DivStyle_PL_01, ["ecmwf_EUR_LL015"]),
         # CAMS Regional standard pressure level products.
         (mpl_hsec_styles.HS_MSSChemStyle_AL_NO2_mconc, ["CAMSregENS"]),
-        (mpl_hsec_styles.HS_MSSChemStyle_ML_NO2_mfrac, ["CAMSglb"]),
-        (mpl_hsec_styles.HS_MSSChemStyle_AL_NO2_mconc, ["SILAM"]),
+        (mpl_hsec_styles.HS_MSSChemStyle_ML_CO_mfrac, ["CAMSglb"]),
+        (mpl_hsec_styles.HS_MSSChemStyle_AL_CO_mconc, ["SILAM"]),
         # CAMS Global standard model level products.
 #        (mpl_hsec_styles.HS_MSSChemStyle_ML_NO2_mfrac, ["CAMSglb"]),
 #        (mpl_hsec_styles.HS_MSSChemStyle_ML_NO2_mfrac, ["CAMSglb"]),
@@ -81,8 +82,8 @@ if mpl_vsec_styles is not None:
 #        (mpl_vsec_styles.VS_TemperatureStyle_01, ["ecmwf_EUR_LL015"]),
         # CAMS Regional standard altitude level products.
         (mpl_vsec_styles.VS_MSSChemStyle_AL_NO2_mconc, ["CAMSregENS"]),
-        (mpl_vsec_styles.VS_MSSChemStyle_ML_NO2_mfrac, ["CAMSglb"]),
-        (mpl_vsec_styles.VS_MSSChemStyle_AL_NO2_mconc, ["SILAM"]),
+        (mpl_vsec_styles.VS_MSSChemStyle_ML_CO_mfrac, ["CAMSglb"]),
+        (mpl_vsec_styles.VS_MSSChemStyle_AL_CO_mconc, ["SILAM"]),
         # CAMS Global standard model level products.
 #        (mpl_vsec_styles.VS_MSSChemStyle_ML_NO2_mfrac, ["CAMSglb"]),
     ]

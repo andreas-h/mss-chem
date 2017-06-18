@@ -33,8 +33,8 @@ class TestCAMSGlobDriver(unittest.TestCase):
     #    self.filenames_tmp = self.driver.download('NO2', self.fcinit)
 
     def test_get(self):
-        #self.driver.get('NO2', self.fcinit, fcend=self.fcinit + datetime.timedelta(hours=3))
-        self.driver.get('AIR_PRESSURE', self.fcinit, fcend=self.fcinit + datetime.timedelta(hours=3))
+        self.driver.get('NO2', self.fcinit, fcend=self.fcinit + datetime.timedelta(hours=6))
+        self.driver.get('AIR_PRESSURE', self.fcinit, fcend=self.fcinit + datetime.timedelta(hours=6))
 
 
 #class TestCAMSRegDownload(unittest.TestCase):

@@ -7,7 +7,6 @@ import datetime
 import logging
 import os.path
 import runpy
-import sys
 
 VERBOSE = True
 QUIET = False
@@ -46,6 +45,9 @@ def _setup_argparse():
     parser.add_argument('-d', '--date', type=_valid_date,
                         default=datetime.date.today(),
                         help='Date to download data for (YYYY-MM-DD)')
+
+    parser.add_argument('-p', '--prune', type=int,
+                        help='Delete data older than PRUNE days')
 
     parser.add_argument('-c', '--config', type=str, default='',
                         help='MSS-Chem configuration file')
@@ -97,9 +99,17 @@ if __name__ == '__main__':
 
     if args.model:
         datasources[args.model].run(fcinit)
+        try:
+            datasources[args.model].prune(args.prune)
+        except:
+            raise
         sys.exit(0)
 
-    for driver in datasources.values():
-        driver.run(fcinit)
-
-    sys.exit(0)
+    else:
+        for driver in datasources.values():
+            driver.run(fcinit)
+            try:
+                datasources[args.model].prune(args.prune)
+            except:
+                raise
+        sys.exit(0)
