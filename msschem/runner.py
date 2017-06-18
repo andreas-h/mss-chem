@@ -108,8 +108,9 @@ if __name__ == '__main__':
     else:
         for driver in datasources.values():
             driver.run(fcinit)
-            try:
-                datasources[args.model].prune(args.prune)
-            except:
-                raise
+            if args.prune:
+                try:
+                    driver.prune(args.prune)
+                except:
+                    raise
         sys.exit(0)
