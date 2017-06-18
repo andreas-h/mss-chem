@@ -101,4 +101,5 @@ if __name__ == '__main__':
 
     for driver in datasources.values():
         driver.run(fcinit)
-        sys.exit(0)
+
+    sys.exit(0)
