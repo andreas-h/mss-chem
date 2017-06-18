@@ -7,6 +7,7 @@ import datetime
 import logging
 import os.path
 import runpy
+import sys
 
 VERBOSE = True
 QUIET = False
