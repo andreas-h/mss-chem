@@ -91,6 +91,72 @@ class DownloadDriver(object):
     pass
 
 
+class FilesystemDownload(DownloadDriver):
+
+    def get(self, species, fcinit, fcstart, fcend, fn_out, n_tries=1):
+        """Copy all files for a given species / init_time
+
+        Parameters
+        ----------
+        fn_out : str
+            Dummy filename of output file.  For a value of
+            ``/PATH/TO/MYFILE.nc``, the actual output files will be called
+            ``/PATH/TO/MYFILE_NN.nc``, where ``_NN`` is a counter.
+
+        Returns
+        -------
+        fns : list of str
+            A list of all files which have been downloaded
+
+        """
+        # get a list of all files to retrieve
+        fsallfiles = os.listdir(
+                self.path.format(species=species, fcinit=fcinit, fcend=fcend))
+        fsfiles = self.filter_files(
+                fsallfiles, species, fcinit, fcstart, fcend)
+
+        # prepare output filename construction
+        path, ext = os.path.splitext(fn_out)
+
+        # retrieve all files
+        outfiles = []
+        for i, fn in enumerate(fsfiles):
+            fn_out = path + '_{:03d}'.format(i) + ext
+            i_try = 0
+            while i_try < n_tries:
+                try:
+                    shutil.copy2(fn, fn_out)
+                    break
+                except Exception:
+                    i_try += 1
+
+            outfiles.append(fn_out)
+
+        return outfiles
+
+    def filter_files(self, fns, species, fcinit, fcstart, fcend):
+        allfiles = {}
+        pattern = self.fnpattern.format(fcinit=fcinit, fctype=self.fctype,
+                                        layer_type=self.layer_type,
+                                        species=species)
+        for fn in fns:
+            m = re.match(pattern, fn)
+            if m:
+                allfiles[m.group(1)] = fn
+        files = OrderedDict(sorted(allfiles.items(), key=lambda t: t[0]))
+
+        result = [f for t, f in files.items()
+                  if fcstart <= fcinit + datetime.timedelta(hours=int(t))
+                             <= fcend]
+        return result
+
+    def __init__(self, path, fnpattern, n_tries=1):
+
+        self.path = path
+        self.fnpattern = fnpattern
+        self.n_tries = n_tries
+
+
 class SCPDownload(DownloadDriver):
 
     def login(self):
