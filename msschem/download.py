@@ -21,6 +21,12 @@ except ImportError:  # Py3
     from urllib.request import urlopen
     from urllib.error import HTTPError
 
+try:
+    import paramiko
+    _PARAMIKO = True
+except ImportError:
+    _PARAMIKO = False
+
 from . import DataNotAvailable
 
 
@@ -83,6 +89,124 @@ TODO
 
 class DownloadDriver(object):
     pass
+
+
+class SCPDownload(DownloadDriver):
+
+    def login(self):
+        # TODO: check if connection already exists
+        self._ssh.connect(self.hostname, self.port, self.username,
+                          self.password, key_filename=self.ssh_id,
+                          compress=True)
+        self._sshtransport = self._ssh.get_transport()
+        self.conn = paramiko.SFTPClient.from_transport(self._sshtransport)
+
+    def logout(self):
+        try:
+            self.conn.close()
+        except:
+            pass
+        try:
+            self._sshtransport.close()
+        except:
+            pass
+        try:
+            self._ssh.close()
+        except:
+            pass
+
+    def get(self, species, fcinit, fcstart, fcend, fn_out, n_tries=1):
+        """Download all files for a given species / init_time
+
+        Parameters
+        ----------
+        fn_out : str
+            Dummy filename of output file.  For a value of
+            ``/PATH/TO/MYFILE.nc``, the actual output files will be called
+            ``/PATH/TO/MYFILE_NN.nc``, where ``_NN`` is a counter.
+
+        Returns
+        -------
+        fns : list of str
+            A list of all files which have been downloaded
+
+        """
+        # open SFTP connection
+        self.login()
+
+        # change to correct directory
+        sftpdir = self.path.format(species=species, fcinit=fcinit, fcend=fcend)
+        try:
+            self.conn.chdir(sftpdir)
+        except IOError as err:
+            raise DataNotAvailable
+
+        # get a list of all files to retrieve
+        sftpallfiles = self.conn.listdir()
+        sftpfiles = self.filter_files(
+                sftpallfiles, species, fcinit, fcstart, fcend)
+
+        # prepare output filename construction
+        path, ext = os.path.splitext(fn_out)
+
+        # retrieve all files
+        outfiles = []
+        for i, fn in enumerate(sftpfiles):
+            fn_out = path + '_{:03d}'.format(i) + ext
+            i_try = 0
+            while i_try < n_tries:
+                try:
+                    self.conn.get(fn, fn_out)
+                    break
+                except Exception:
+                    i_try += 1
+
+            outfiles.append(fn_out)
+
+        # close SFTP connection
+        self.logout()
+
+        return outfiles
+
+    def filter_files(self, fns, species, fcinit, fcstart, fcend):
+        allfiles = {}
+        pattern = self.fnpattern.format(fcinit=fcinit, fctype=self.fctype,
+                                        layer_type=self.layer_type,
+                                        species=species)
+        for fn in fns:
+            m = re.match(pattern, fn)
+            if m:
+                allfiles[m.group(1)] = fn
+        files = OrderedDict(sorted(allfiles.items(), key=lambda t: t[0]))
+
+        result = [f for t, f in files.items()
+                  if fcstart <= fcinit + datetime.timedelta(hours=int(t))
+                             <= fcend]
+        return result
+
+    def __init__(self, host, path, fnpattern, username=None, password=None,
+                 port=22, ssh_id=None, ssh_hostkey=None,
+                 ssh_unknown_hosts=False, n_tries=1):
+
+        if not _PARAMIKO:
+            raise ImportError('Cannot import paramiko, which is needed for '
+                              'SCPDownload')
+
+        self.host = host
+        self.username = username
+        self.password = password
+        self.port = port
+        self.ssh_id = ssh_id
+        self.n_tries = n_tries
+
+        self._ssh = paramiko.SSHClient()
+        self._ssh.load_system_host_keys()
+        if ssh_hostkey is not None:
+            self._ssh.load_host_keys(ssh_hostkey)
+        if ssh_unknown_hosts:
+            self._ssh.set_missing_host_key_policy(paramiko.WarningPolicy())
+        else:
+            self._ssh.set_missing_host_key_policy(paramiko.RejectPolicy())
 
 
 class FTPDownload(DownloadDriver):
