@@ -208,7 +208,8 @@ class CTMDriver(object):
 
         outdir = os.path.join(self.cfg['basepath'], self.cfg['name'])
         paths = glob.glob(os.path.join(outdir, '*'))
-        dates = [datetime.datetime.strptime(p, '%Y-%m-%d_%H').date()
+        dates = [datetime.datetime.strptime(os.path.split(p)[1],
+                                            '%Y-%m-%d_%H').date()
                  for p in paths]
 
         if not len(paths):
@@ -218,10 +219,9 @@ class CTMDriver(object):
 
         for date, path in zip(dates, paths):
             if date < date_threshold:
-                self.log.error(path)
                 self.log.info('Removing {:%Y-%m-%d} ({})'.format(date,
                                                                  self.name))
-                # TODO shutil.rmtree(path)
+                shutil.rmtree(path)
 
     def get(self, species, fcinit, fcend=None, fcstart=None):
         self.log.debug('Starting {}/{:%Y%m%d}:{}'.format(
