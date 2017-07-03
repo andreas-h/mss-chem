@@ -1,25 +1,37 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import with_statement
+from __future__ import print_function, with_statement
 
 from collections import OrderedDict
 from contextlib import closing
 import datetime
+from distutils.version import LooseVersion
 from ftplib import FTP, FTP_TLS
 from ftplib import all_errors as FTP_ALL_ERRORS
-import http.client
+import logging
 import os.path
 import re
 import shutil
+from string import Formatter
 
 try:  # Py2
     from urllib import urlencode
     from urllib2 import urlopen
     from urllib2 import HTTPError
+    import httplib as http_client
+    __pymsschem__ = 2
 except ImportError:  # Py3
     from urllib.parse import urlencode
     from urllib.request import urlopen
     from urllib.error import HTTPError
+    import http.client as http_client
+    __pymsschem__ = 3
+
+try:
+    import paramiko
+    _PARAMIKO = True
+except ImportError:
+    _PARAMIKO = False
 
 from . import DataNotAvailable
 
@@ -80,9 +92,222 @@ TODO
 
 """
 
+class DictFormatter(Formatter):
+    # from https://stackoverflow.com/a/33621609/152439
+    def __init__(self, default='{{{0}}}'):
+        self.default = default
+
+    def get_value(self, key, args, kwds):
+        if isinstance(key, str):
+            return kwds.get(key, self.default.format(key))
+        else:
+            return Formatter.get_value(key, args, kwds)
+
 
 class DownloadDriver(object):
     pass
+
+
+class FilesystemDownload(DownloadDriver):
+
+    def get(self, species, fcinit, fcstart, fcend, fn_out, n_tries=1):
+        """Copy all files for a given species / init_time
+
+        Parameters
+        ----------
+        fn_out : str
+            Dummy filename of output file.  For a value of
+            ``/PATH/TO/MYFILE.nc``, the actual output files will be called
+            ``/PATH/TO/MYFILE_NN.nc``, where ``_NN`` is a counter.
+
+        Returns
+        -------
+        fns : list of str
+            A list of all files which have been downloaded
+
+        """
+        if self.pre_filter_hook:
+            fn, args = self.pre_filter_hook
+            args['species'] = species
+            args['fcinit'] = fcinit
+            args['fcstart'] = fcstart
+            args['fcend'] = fcend
+            args['fn_out'] = fn_out
+            args['path'] = self.path.format(species=species, fcinit=fcinit, fcend=fcend)
+            args['path_out'] = os.path.split(fn_out)[0]
+            args['fnpattern'] = DictFormatter().format(
+                    args.get('fnpattern'), species=species, fcinit=fcinit, fcend=fcend)
+
+            #args['fnpattern'].format(species=species, fcinit=fcinit, fcend=fcend)
+            fn(**args)
+
+        # get a list of all files to retrieve
+        fullpath = self.path.format(species=species, fcinit=fcinit, fcend=fcend)
+        fsallfiles = os.listdir(fullpath)
+        fsfiles = self.filter_files(
+                fsallfiles, species, fcinit, fcstart, fcend)
+        fsfiles = [os.path.join(fullpath, f) for f in fsfiles]
+
+        # prepare output filename construction
+        path, ext = os.path.splitext(fn_out)
+
+        # retrieve all files
+        outfiles = []
+        if self.do_copy:
+            for i, fn in enumerate(fsfiles):
+                fn_out = path + '_{:03d}'.format(i) + ext
+                i_try = 0
+                while i_try < n_tries:
+                    try:
+                        shutil.copy2(fn, fn_out)
+                        break
+                    except Exception:
+                        i_try += 1
+
+                outfiles.append(fn_out)
+            return outfiles
+        else:
+            return fsfiles
+
+    def filter_files(self, fns, species, fcinit, fcstart, fcend):
+        allfiles = {}
+        pattern = self.fnpattern.format(fcinit=fcinit, species=species)
+        for fn in fns:
+            m = re.match(pattern, fn)
+            if m:
+                allfiles[m.group(0)] = fn
+        result = sorted(allfiles.values())
+        return result
+
+    def __init__(self, path, fnpattern, n_tries=1, do_copy=False,
+                 pre_filter_hook=None):
+
+        self.path = path
+        self.fnpattern = fnpattern
+        self.n_tries = n_tries
+        self.do_copy = do_copy
+        self.pre_filter_hook = pre_filter_hook
+
+
+class SCPDownload(DownloadDriver):
+
+    def login(self):
+        # TODO: check if connection already exists
+        self._ssh.connect(self.host, self.port, self.username,
+                          self.password, key_filename=self.ssh_id,
+                          compress=True)
+        self._sshtransport = self._ssh.get_transport()
+        self.conn = paramiko.SFTPClient.from_transport(self._sshtransport)
+
+    def logout(self):
+        try:
+            self.conn.close()
+        except:
+            pass
+        try:
+            self._sshtransport.close()
+        except:
+            pass
+        try:
+            self._ssh.close()
+        except:
+            pass
+
+    def get(self, species, fcinit, fcstart, fcend, fn_out, n_tries=1):
+        """Download all files for a given species / init_time
+
+        Parameters
+        ----------
+        fn_out : str
+            Dummy filename of output file.  For a value of
+            ``/PATH/TO/MYFILE.nc``, the actual output files will be called
+            ``/PATH/TO/MYFILE_NN.nc``, where ``_NN`` is a counter.
+
+        Returns
+        -------
+        fns : list of str
+            A list of all files which have been downloaded
+
+        """
+        # open SFTP connection
+        self.login()
+
+        # change to correct directory
+        sftpdir = self.path.format(species=species, fcinit=fcinit, fcend=fcend)
+        try:
+            self.conn.chdir(sftpdir)
+        except IOError as err:
+            raise DataNotAvailable
+
+        # get a list of all files to retrieve
+        sftpallfiles = self.conn.listdir()
+        sftpfiles = self.filter_files(
+                sftpallfiles, species, fcinit, fcstart, fcend)
+
+        # prepare output filename construction
+        path, ext = os.path.splitext(fn_out)
+
+        # retrieve all files
+        outfiles = []
+        for i, fn in enumerate(sftpfiles):
+            fn_out = path + '_{:03d}'.format(i) + ext
+            i_try = 0
+            while i_try < n_tries:
+                try:
+                    self.conn.get(fn, fn_out)
+                    break
+                except Exception:
+                    i_try += 1
+
+            outfiles.append(fn_out)
+
+        # close SFTP connection
+        self.logout()
+
+        return outfiles
+
+    def filter_files(self, fns, species, fcinit, fcstart, fcend):
+        allfiles = {}
+        pattern = self.fnpattern.format(fcinit=fcinit, species=species)
+        for fn in fns:
+            m = re.match(pattern, fn)
+            if m:
+                allfiles[m.group(0)] = fn
+        result = sorted(allfiles.values())
+        return result
+
+    def __init__(self, host, path, fnpattern, username=None, password=None,
+                 port=22, ssh_id=None, ssh_hostkey=None,
+                 ssh_unknown_hosts=False, n_tries=1):
+
+        self.log = logging.getLogger('msschem')
+
+        if not _PARAMIKO:
+            raise ImportError('Cannot import paramiko, which is needed for '
+                              'SCPDownload')
+        if LooseVersion(paramiko.__version__) < LooseVersion('2.2'):
+            self.log.warn('Downloading via SCP with ed25519 hostkeys won\'t '
+                          'work (paramiko version < 2.2)')
+
+        self.host = host
+        self.path = path
+        self.fnpattern = fnpattern
+        self.username = username
+        self.password = password
+        if __pymsschem__ == 3:
+            self.password = self.password.encode()
+        self.port = port
+        self.ssh_id = ssh_id
+        self.n_tries = n_tries
+
+        self._ssh = paramiko.SSHClient()
+        self._ssh.load_system_host_keys()
+        if ssh_hostkey is not None:
+            self._ssh.load_host_keys(ssh_hostkey)
+        if ssh_unknown_hosts:
+            self._ssh.set_missing_host_key_policy(paramiko.WarningPolicy())
+        else:
+            self._ssh.set_missing_host_key_policy(paramiko.RejectPolicy())
 
 
 class FTPDownload(DownloadDriver):
@@ -193,7 +418,7 @@ class HTTPDownload(DownloadDriver):
                 with closing(urlopen(url)) as resp, open(os.path.expanduser(fn), 'wb') as out:
                     shutil.copyfileobj(resp, out)
                 break
-            except http.client.IncompleteRead:
+            except http_client.IncompleteRead:
                 i += 1
 
     def get(self, species, fcinit, fcstart, fcend, fn_out, n_tries=1):
