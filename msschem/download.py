@@ -139,7 +139,10 @@ class FilesystemDownload(DownloadDriver):
                     args.get('fnpattern'), species=species, fcinit=fcinit, fcend=fcend)
 
             #args['fnpattern'].format(species=species, fcinit=fcinit, fcend=fcend)
-            fn(**args)
+            try:
+                fn(**args)
+            except DataNotAvailable:
+                pass
 
             fullpath = args['path_out']
         else:
@@ -151,6 +154,8 @@ class FilesystemDownload(DownloadDriver):
         fsfiles = self.filter_files(
                 fsallfiles, species, fcinit, fcstart, fcend)
         fsfiles = [os.path.join(fullpath, f) for f in fsfiles]
+        if not fsfiles:
+            raise DataNotAvailable
 
         # prepare output filename construction
         path, ext = os.path.splitext(fn_out)
@@ -247,6 +252,8 @@ class SCPDownload(DownloadDriver):
         sftpallfiles = self.conn.listdir()
         sftpfiles = self.filter_files(
                 sftpallfiles, species, fcinit, fcstart, fcend)
+        if not sftpfiles:
+            raise DataNotAvailable
 
         # prepare output filename construction
         path, ext = os.path.splitext(fn_out)
