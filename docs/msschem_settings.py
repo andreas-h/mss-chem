@@ -12,6 +12,7 @@ from msschem.download import FTPDownload
 from msschem.models import SilamDriver
 from msschem.download import SilamDownload
 
+from msschem.download import SCPDownload
 datasources = {
     'CAMSReg_ENSEMBLE': CAMSRegDriver(
         dict(
@@ -52,18 +53,19 @@ datasources = {
             species=['CO', 'NO2', 'NO', 'NMVOC', 'O3', 'PANS', 'PM10', 'SO2'],
         )
     ),
-    #'EMEP': EMEPDriver(
-    #    dict(
-    #        dldriver=FTPDownload(
-    #            host='rasputin.iup.uni-bremen.de',
-    #            passive=False,
-    #            username='MYUSER',
-    #            password='MYPASSWORD'),
-    #        force=False,
-    #        basepath=os.path.expanduser('~/tmp/mss/data/'),
-    #        name='EMEP',
-    #        temppath=None,
-    #        species=['NO2', 'PM25'],
-    #    )
-    #)
+    'EMEP': EMEPDriver(
+        dict(
+            dldriver=SCPDownload(
+                host='glogin',
+                path='.',
+                fnpattern='CWF_12-{fcinit:%Y%m%d}_hourInst.nc',
+                username='metno',
+                password='EdEh2gS.'),
+            force=False,
+            basepath=os.path.expanduser('~/tmp/mss/data/'),
+            name='EMEP',
+            temppath='/home2/hilboll/code/mss-chem/tmp',
+            species=['NO2', 'PM25'],
+        )
+    ),
 }

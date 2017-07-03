@@ -507,10 +507,10 @@ class EMEPDriver(CTMDriver):
     fcstart_offset = datetime.timedelta(hours=1)
 
     # maximum forecast step relative to fcinit
-    fend_offset = datetime.timedelta(hours=97)
+    fcend_offset = datetime.timedelta(hours=97)
 
     # dimensions
-    dims = [('t', None), ('z', 20), ('y', 281), ('x', 281)]
+    dims = [('t', None), ('z', 20), ('y', 321), ('x', 281)]
 
     species = {'O3': dict(varname='D3_ug_O3', urlname=''),
                'NO2': dict(varname='D3_ug_NO2', urlname=''),
@@ -518,20 +518,30 @@ class EMEPDriver(CTMDriver):
                'PM10': dict(varname='D3_ug_PM10_wet', urlname=''),
                'NO': dict(varname='D3_ug_NO', urlname=''),
                'SO2': dict(varname='D3_ug_SO2', urlname=''),
-               'CO': dict(varname='D3_ug_CO', urlname=''),
+               'CO': dict(varname='D3_ug_CO', urlname='co'),
                'NH3': dict(varname='D3_ug_NH3', urlname=''),
                'PANS': dict(varname='D3_ug_PAN', urlname=''),
                'NMVOC': dict(varname='D3_ug_NMVOC', urlname=''),
-               'AIR_PRESSURE': dict(varname='PS', urlname=''),
+               'AIR_PRESSURE': dict(varname='PS', urlname='pressure'),
                }
 
     needed_vars = ['lon', 'lat', 'lev', 'hyam', 'hybm', 'time']
 
+    aggdim = 'time'
+
     concentration_type = 'mass'
     quantity_type = 'concentration'
+    layer_type = 'ml'
 
     name = 'EMEP'
     need_to_convert_to_nc4c = True
+
+    def get_dims(self, species):
+        dimsize = copy.deepcopy(self.dims)
+        if species == 'AIR_PRESSURE':  # air pressure doesn't have z dimension
+            dimsize = [(k, v) for k, v in dimsize if k != 'z']
+        dimsize = OrderedDict(dimsize)
+        return dimsize
 
     def fix_dataset(self, fn_out, species, fcinit):
         with Dataset(fn_out, 'a', format='NETCDF4_CLASSIC') as nc:
