@@ -123,29 +123,32 @@ class FilesystemDownload(DownloadDriver):
 
         """
         # get a list of all files to retrieve
-        fsallfiles = os.listdir(
-                self.path.format(species=species, fcinit=fcinit, fcend=fcend))
+        fullpath = self.path.format(species=species, fcinit=fcinit, fcend=fcend)
+        fsallfiles = os.listdir(fullpath)
         fsfiles = self.filter_files(
                 fsallfiles, species, fcinit, fcstart, fcend)
+        fsfiles = [os.path.join(fullpath, f) for f in fsfiles]
 
         # prepare output filename construction
         path, ext = os.path.splitext(fn_out)
 
         # retrieve all files
         outfiles = []
-        for i, fn in enumerate(fsfiles):
-            fn_out = path + '_{:03d}'.format(i) + ext
-            i_try = 0
-            while i_try < n_tries:
-                try:
-                    shutil.copy2(fn, fn_out)
-                    break
-                except Exception:
-                    i_try += 1
+        if self.do_copy:
+            for i, fn in enumerate(fsfiles):
+                fn_out = path + '_{:03d}'.format(i) + ext
+                i_try = 0
+                while i_try < n_tries:
+                    try:
+                        shutil.copy2(fn, fn_out)
+                        break
+                    except Exception:
+                        i_try += 1
 
-            outfiles.append(fn_out)
-
-        return outfiles
+                outfiles.append(fn_out)
+            return outfiles
+        else:
+            return fsfiles
 
     def filter_files(self, fns, species, fcinit, fcstart, fcend):
         allfiles = {}
@@ -155,19 +158,16 @@ class FilesystemDownload(DownloadDriver):
         for fn in fns:
             m = re.match(pattern, fn)
             if m:
-                allfiles[m.group(1)] = fn
-        files = OrderedDict(sorted(allfiles.items(), key=lambda t: t[0]))
-
-        result = [f for t, f in files.items()
-                  if fcstart <= fcinit + datetime.timedelta(hours=int(t))
-                             <= fcend]
+                allfiles[m.group(0)] = fn
+        result = sorted(allfiles.values())
         return result
 
-    def __init__(self, path, fnpattern, n_tries=1):
+    def __init__(self, path, fnpattern, n_tries=1, do_copy=False):
 
         self.path = path
         self.fnpattern = fnpattern
         self.n_tries = n_tries
+        self.do_copy = do_copy
 
 
 class SCPDownload(DownloadDriver):
