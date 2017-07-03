@@ -5,8 +5,10 @@ from __future__ import print_function, with_statement
 from collections import OrderedDict
 from contextlib import closing
 import datetime
+from distutils.version import LooseVersion
 from ftplib import FTP, FTP_TLS
 from ftplib import all_errors as FTP_ALL_ERRORS
+import logging
 import os.path
 import re
 import shutil
@@ -17,11 +19,13 @@ try:  # Py2
     from urllib2 import urlopen
     from urllib2 import HTTPError
     import httplib as http_client
+    __pymsschem__ = 2
 except ImportError:  # Py3
     from urllib.parse import urlencode
     from urllib.request import urlopen
     from urllib.error import HTTPError
     import http.client as http_client
+    __pymsschem__ = 3
 
 try:
     import paramiko
@@ -174,7 +178,7 @@ class SCPDownload(DownloadDriver):
 
     def login(self):
         # TODO: check if connection already exists
-        self._ssh.connect(self.hostname, self.port, self.username,
+        self._ssh.connect(self.host, self.port, self.username,
                           self.password, key_filename=self.ssh_id,
                           compress=True)
         self._sshtransport = self._ssh.get_transport()
@@ -255,25 +259,30 @@ class SCPDownload(DownloadDriver):
         for fn in fns:
             m = re.match(pattern, fn)
             if m:
-                allfiles[m.group(1)] = fn
-        files = OrderedDict(sorted(allfiles.items(), key=lambda t: t[0]))
-
-        result = [f for t, f in files.items()
-                  if fcstart <= fcinit + datetime.timedelta(hours=int(t))
-                             <= fcend]
+                allfiles[m.group(0)] = fn
+        result = sorted(allfiles.values())
         return result
 
     def __init__(self, host, path, fnpattern, username=None, password=None,
                  port=22, ssh_id=None, ssh_hostkey=None,
                  ssh_unknown_hosts=False, n_tries=1):
 
+        self.log = logging.getLogger('msschem')
+
         if not _PARAMIKO:
             raise ImportError('Cannot import paramiko, which is needed for '
                               'SCPDownload')
+        if LooseVersion(paramiko.__version__) < LooseVersion('2.2'):
+            self.log.warn('Downloading via SCP with ed25519 hostkeys won\'t '
+                          'work (paramiko version < 2.2)')
 
         self.host = host
+        self.path = path
+        self.fnpattern = fnpattern
         self.username = username
         self.password = password
+        if __pymsschem__ == 3:
+            self.password = self.password.encode()
         self.port = port
         self.ssh_id = ssh_id
         self.n_tries = n_tries
