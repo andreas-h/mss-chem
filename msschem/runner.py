@@ -100,10 +100,11 @@ if __name__ == '__main__':
 
     if args.model:
         datasources[args.model].run(fcinit)
-        try:
-            datasources[args.model].prune(args.prune)
-        except:
-            raise
+        if args.prune:
+            try:
+                datasources[args.model].prune(args.prune)
+            except:
+                raise
         sys.exit(0)
 
     else:
