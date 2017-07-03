@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import with_statement
+from __future__ import print_function, with_statement
 
 from collections import OrderedDict
 from contextlib import closing
 import datetime
 from ftplib import FTP, FTP_TLS
 from ftplib import all_errors as FTP_ALL_ERRORS
-import http.client
 import os.path
 import re
 import shutil
+from string import Formatter
 
 try:  # Py2
     from urllib import urlencode
@@ -87,6 +87,17 @@ TODO
 
 
 """
+
+class DictFormatter(Formatter):
+    # from https://stackoverflow.com/a/33621609/152439
+    def __init__(self, default='{{{0}}}'):
+        self.default = default
+
+    def get_value(self, key, args, kwds):
+        if isinstance(key, str):
+            return kwds.get(key, self.default.format(key))
+        else:
+            return Formatter.get_value(key, args, kwds)
 
 
 class DownloadDriver(object):
