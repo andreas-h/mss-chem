@@ -126,6 +126,21 @@ class FilesystemDownload(DownloadDriver):
             A list of all files which have been downloaded
 
         """
+        if self.pre_filter_hook:
+            fn, args = self.pre_filter_hook
+            args['species'] = species
+            args['fcinit'] = fcinit
+            args['fcstart'] = fcstart
+            args['fcend'] = fcend
+            args['fn_out'] = fn_out
+            args['path'] = self.path.format(species=species, fcinit=fcinit, fcend=fcend)
+            args['path_out'] = os.path.split(fn_out)[0]
+            args['fnpattern'] = DictFormatter().format(
+                    args.get('fnpattern'), species=species, fcinit=fcinit, fcend=fcend)
+
+            #args['fnpattern'].format(species=species, fcinit=fcinit, fcend=fcend)
+            fn(**args)
+
         # get a list of all files to retrieve
         fullpath = self.path.format(species=species, fcinit=fcinit, fcend=fcend)
         fsallfiles = os.listdir(fullpath)
@@ -156,9 +171,7 @@ class FilesystemDownload(DownloadDriver):
 
     def filter_files(self, fns, species, fcinit, fcstart, fcend):
         allfiles = {}
-        pattern = self.fnpattern.format(fcinit=fcinit, fctype=self.fctype,
-                                        layer_type=self.layer_type,
-                                        species=species)
+        pattern = self.fnpattern.format(fcinit=fcinit, species=species)
         for fn in fns:
             m = re.match(pattern, fn)
             if m:
@@ -166,12 +179,14 @@ class FilesystemDownload(DownloadDriver):
         result = sorted(allfiles.values())
         return result
 
-    def __init__(self, path, fnpattern, n_tries=1, do_copy=False):
+    def __init__(self, path, fnpattern, n_tries=1, do_copy=False,
+                 pre_filter_hook=None):
 
         self.path = path
         self.fnpattern = fnpattern
         self.n_tries = n_tries
         self.do_copy = do_copy
+        self.pre_filter_hook = pre_filter_hook
 
 
 class SCPDownload(DownloadDriver):
@@ -253,9 +268,7 @@ class SCPDownload(DownloadDriver):
 
     def filter_files(self, fns, species, fcinit, fcstart, fcend):
         allfiles = {}
-        pattern = self.fnpattern.format(fcinit=fcinit, fctype=self.fctype,
-                                        layer_type=self.layer_type,
-                                        species=species)
+        pattern = self.fnpattern.format(fcinit=fcinit, species=species)
         for fn in fns:
             m = re.match(pattern, fn)
             if m:
