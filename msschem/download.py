@@ -16,10 +16,12 @@ try:  # Py2
     from urllib import urlencode
     from urllib2 import urlopen
     from urllib2 import HTTPError
+    import httplib as http_client
 except ImportError:  # Py3
     from urllib.parse import urlencode
     from urllib.request import urlopen
     from urllib.error import HTTPError
+    import http.client as http_client
 
 try:
     import paramiko
@@ -383,7 +385,7 @@ class HTTPDownload(DownloadDriver):
                 with closing(urlopen(url)) as resp, open(os.path.expanduser(fn), 'wb') as out:
                     shutil.copyfileobj(resp, out)
                 break
-            except http.client.IncompleteRead:
+            except http_client.IncompleteRead:
                 i += 1
 
     def get(self, species, fcinit, fcstart, fcend, fn_out, n_tries=1):
