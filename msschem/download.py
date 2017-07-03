@@ -141,8 +141,12 @@ class FilesystemDownload(DownloadDriver):
             #args['fnpattern'].format(species=species, fcinit=fcinit, fcend=fcend)
             fn(**args)
 
+            fullpath = args['path_out']
+        else:
+            fullpath = self.path.format(species=species, fcinit=fcinit, fcend=fcend)
+
+
         # get a list of all files to retrieve
-        fullpath = self.path.format(species=species, fcinit=fcinit, fcend=fcend)
         fsallfiles = os.listdir(fullpath)
         fsfiles = self.filter_files(
                 fsallfiles, species, fcinit, fcstart, fcend)
