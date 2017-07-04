@@ -18,10 +18,9 @@ try:
 except ImportError:
     _NCO = False
 
-# from .download import CAMSRegDownload, SilamDownload
+from ..download import FilesystemDownload
 # from .version import __version__
 
-#from .cams_global import CAMSGlobDriver
 from ..species import species_names
 from ..fileutils import touch
 from .. import DataNotAvailable
@@ -128,11 +127,11 @@ class CTMDriver(object):
             fn_new = tempfile.mktemp(suffix='.nc', dir=self.cfg['temppath'])
             nco.ncks(input=fn, output=fn_new, options=['-O', '-7'])
             fns_new.append(fn_new)
-            try:  # TODO this is not clean. what about other downloads?
+            if not isinstance(self.cfg['dldriver'], FilesystemDownload):
+                os.remove(fn)
+            else:
                 if self.cfg['dldriver'].do_copy:  # don't delete originals
                     os.remove(fn)
-            except AttributeError:
-                pass
         self.log.debug('... done.')
         return fns_new
 
