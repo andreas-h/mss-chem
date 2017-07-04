@@ -540,6 +540,8 @@ class EMEPDriver(CTMDriver):
     name = 'EMEP'
     need_to_convert_to_nc4c = True
 
+    dimensions_no_copy = ['ilev']
+
     def get_dims(self, species):
         dimsize = copy.deepcopy(self.dims)
         if species == 'AIR_PRESSURE':  # air pressure doesn't have z dimension
@@ -564,6 +566,8 @@ class EMEPDriver(CTMDriver):
                 a_ = nc.variables['hyam'][:]
                 b_ = nc.variables['hybm'][:]
                 ps_ = nc.variables['PS'][:]
+                nc.variables['PS'].setncattr('standard_name',
+                                             'surface_air_pressure')
                 # calculate air_pressure
                 p_ = (a_[np.newaxis, :, np.newaxis, np.newaxis] +
                       b_[np.newaxis, :, np.newaxis, np.newaxis] *
