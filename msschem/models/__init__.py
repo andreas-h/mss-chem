@@ -78,6 +78,7 @@ class CTMDriver(object):
     needed_vars = []
 
     datavar_attrs_no_copy = ['_FillValue', 'add_offset', 'scale_factor']
+    dimensions_no_copy = []
 
     need_to_convert_to_nc4c = False
 
@@ -303,11 +304,11 @@ class CTMDriver(object):
                 'The method `fix_dataset` must be implemented in the '
                 'model implementation.')
 
-    @staticmethod
-    def copy_dimensions(nc_in, nc_out):
+    def copy_dimensions(self, nc_in, nc_out):
         for name, dim in nc_in.dimensions.items():
-            nc_out.createDimension(
-                    name, None if dim.isunlimited() else dim.size)
+            if name not in self.dimensions_no_copy:
+                nc_out.createDimension(
+                        name, None if dim.isunlimited() else dim.size)
 
     @staticmethod
     def copy_global_attrs(nc_in, nc_out):
