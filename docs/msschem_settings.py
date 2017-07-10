@@ -2,6 +2,8 @@ import os.path
 from subprocess import check_call
 from nco import Nco
 
+from msschem import DataNotAvailable
+
 from msschem.models import CAMSRegDriver
 from msschem.download import CAMSRegDownload
 
@@ -79,32 +81,38 @@ datasources = {
 EMEP_PERT_CITIES = ['AmsRot', 'London', 'Paris', 'PoVall', 'Ruhr']
 
 
-#def preprocess_emep_perturbation(city, fnpattern, path_orig, kwargs.get('path_out')):
 def preprocess_emep_perturbation(**kwargs):
     
     varlist = ['D3_ug_CO', 'PS', 'hyam', 'hybm', 'P0']
 
     species = kwargs['species']
 
-    options_string = ['-7']  # for NETCDF4_CLASSIC output
+    options_string = ['-7', '-O']  # for NETCDF4_CLASSIC output
     nco = Nco()
 
-    fn_city = os.path.join(kwargs.get('path'), DictFormatter().format(kwargs.get('fnpattern'), city_id='{}_ALL_P15_'.format(kwargs.get('city'))))
+    city = kwargs.get('city')
+    fn_city = os.path.join(kwargs.get('path'),
+                           DictFormatter().format(kwargs.get('fnpattern'),
+                                                  city_id='{}_ALL_P15_'.format(city)))
+    if not os.path.isfile(fn_city):
+        raise DataNotAvailable
     if species == 'co':
         fn_orig = os.path.join(kwargs.get('path'), DictFormatter().format(kwargs.get('fnpattern'), city_id=''))
-        fn_tmp_orig = os.path.join(kwargs.get('path_out'), '_orig.nc')
-        fn_tmp_city = os.path.join(kwargs.get('path_out'), '_pert.nc')
+        if not os.path.isfile(fn_orig):
+            raise DataNotAvailable
+        fn_tmp_orig = os.path.join(kwargs.get('path_out'), '{}_orig.nc'.format(city))
+        fn_tmp_city = os.path.join(kwargs.get('path_out'), '{}_pert.nc'.format(city))
         options_string += ['-v' + ','.join(varlist)]
         nco.ncks(input=fn_orig, output=fn_tmp_orig, options=options_string)
         nco.ncks(input=fn_city, output=fn_tmp_city, options=options_string)
-        fn_out_tracer = os.path.join(kwargs.get('path_out'), 'emep_pert_{}_co.nc'.format(kwargs.get('city')))
+        fn_out_tracer = os.path.join(kwargs.get('path_out'), 'emep_pert_{}_co.nc'.format(city))
         check_call(['ncdiff', '-7', '-O', '-vD3_ug_CO', fn_tmp_orig,
                     fn_tmp_city, fn_out_tracer])
-        os.remove(fn_tmp_orig)
         os.remove(fn_tmp_city)
+        os.remove(fn_tmp_orig)
     elif species == 'pressure':
         options_string += ['-v' + ','.join(varlist[1:])]
-        fn_out_pressure = os.path.join(kwargs.get('path_out'), 'emep_pert_{}_pressure.nc'.format(kwargs.get('city')))
+        fn_out_pressure = os.path.join(kwargs.get('path_out'), 'emep_pert_{}_pressure.nc'.format(city))
         nco.ncks(input=fn_city, output=fn_out_pressure, options=options_string)
     else:
         raise ValueError
@@ -133,5 +141,6 @@ for city in EMEP_PERT_CITIES:
             )
     )
     driver.need_to_convert_to_nc4c = False
+    driver.name = 'EMEP_' + city
     datasources['EMEP_' + city] = driver
 
