@@ -159,6 +159,12 @@ class CAMSTracerDriver(CAMSGlobDriver):
             nc.variables['time'].setncattr('units', t_unit)
             nc.variables['time'].setncattr('standard_name', 'time')
 
+            nc.variables['level'].setncattr('standard_name',
+                                            'atmosphere_pressure_coordinate')
+            # convert to Pa; otherwise, vsec plotting doesn't work
+            nc.variables['level'][:] *= 100.
+            nc.variables['level'].setncattr('units', 'Pa')
+
             self.set_standard_name(nc, species)
 
             # TODO add history
