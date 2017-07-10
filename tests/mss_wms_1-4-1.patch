@@ -1,3 +1,41 @@
+diff --git a/mslib/mswms/dataaccess.py b/mslib/mswms/dataaccess.py
+index bd4f935..9adadc3 100644
+--- a/mslib/mswms/dataaccess.py
++++ b/mslib/mswms/dataaccess.py
+@@ -708,7 +708,7 @@ class MSSChemDataAccess(NWPDataAccess):
+         self._data_organisation_table = {
+             stdname: {vert: shortname.lower()}
+             for stdname, (shortname, _, _, _) in MSSChemTargets.items()}
+-        self._data_organisation_table["air_pressure"] = {vert: "p"}
++        self._data_organisation_table["air_pressure"] = {vert: "air_pressure"}
+ 
+     def _determine_filename(self, variable, vartype, init_time, valid_time):
+         """Determines the name of the CAMS global data file that contains
+diff --git a/mslib/mswms/mpl_vsec_styles.py b/mslib/mswms/mpl_vsec_styles.py
+index 94f09b1..0dbf0a9 100644
+--- a/mslib/mswms/mpl_vsec_styles.py
++++ b/mslib/mswms/mpl_vsec_styles.py
+@@ -1456,7 +1456,7 @@ class VS_MSSChemStyle(AbstractVerticalSectionStyle):
+         # for altitude level model data, when we don't have air_pressure information, we want to warn users that the
+         # vertical section is only an approximation
+         if (self.name[-2:] == "al") and\
+-                ("p" not in self.driver.data_access.build_filetree().values()[0].values()[0].keys()):
++                ("air_pressure" not in self.driver.data_access.build_filetree().values()[0].values()[0].keys()):
+             self.title = self.title.replace(" al)", " al; WARNING: vert. distribution only approximate!)")
+ 
+     def _prepare_datafields(self):
+@@ -1554,6 +1554,11 @@ def make_msschem_class(entity, nam, vert, units, scale, add_data=None,
+             # at all (e.g., CAMS reg. Ensemble)
+             # In those cases we derive air_pressure from the altitude alone, in the _prepare_datafields() method
+             add_data = []
++        elif vert == 'pl':
++            # "pl" are pressure levels.  Here, the air_pressure information is
++            # implicitly contained in the vertical dimension coordinate, so we
++            # don't need to explicitly load it here.
++            add_data = []
+         else:
+             # all other layer types need to read air_pressure from the data
+             add_data = [(vert, "air_pressure")]
 diff --git a/mslib/mswms/wms.py b/mslib/mswms/wms.py
 index 1325563..062fe16 100644
 --- a/mslib/mswms/wms.py
