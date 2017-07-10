@@ -105,10 +105,19 @@ class DictFormatter(Formatter):
 
 
 class DownloadDriver(object):
-    pass
+
+    def clean_tempfiles(self, fns_temp):
+        for fn in fns_temp:
+            os.remove(fn)
 
 
 class FilesystemDownload(DownloadDriver):
+
+    def clean_tempfiles(self, fns_temp):
+        if not self.do_copy:
+            return
+        for fn in fns_temp:
+            os.remove(fn)
 
     def get(self, species, fcinit, fcstart, fcend, fn_out, n_tries=1):
         """Copy all files for a given species / init_time
