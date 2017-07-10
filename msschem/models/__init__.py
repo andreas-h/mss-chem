@@ -557,6 +557,13 @@ class EMEPDriver(CTMDriver):
             nc.variables['time'][:] = date2num(t_obj, t_unit)
             nc.variables['time'].setncattr('units', t_unit)
             nc.variables['time'].setncattr('standard_name', 'time')
+
+            # MSS doesn't like it when the vertical coordinate dimension,
+            # after being cast to int, isn't unique. EMEP has values 0..1,
+            # so we just overwrite these values with 1..20 here
+            v_lev = nc.variables['lev']
+            v_lev[:] = np.arange(v_lev[:].size) + 1
+
             # set standard name of data variable
             self.set_standard_name(nc, species)
             # TODO can we make a generic function for this?
