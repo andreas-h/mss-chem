@@ -157,7 +157,9 @@ class CTMDriver(object):
 
         """
         if species not in self.species.keys():
-            raise ValueError()
+            errmsg = 'Species {} isn\'t contained in the data'.format(species)
+            self.log.error(errmsg)
+            raise ValueError(errmsg)
         fcinit = self.check_day(fcinit)
         fcstart = self.get_fctime('start', fcinit, fcstart)
         fcend = self.get_fctime('end', fcinit, fcend)
