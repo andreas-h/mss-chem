@@ -144,3 +144,74 @@ for city in EMEP_PERT_CITIES:
     driver.name = 'EMEP_' + city
     datasources['EMEP_' + city] = driver
 
+
+class CAMSTracerDriver(CAMSGlobDriver):
+
+    def fix_dataset(self, fn_out, species, fcinit):
+        from netCDF4 import Dataset, num2date, date2num
+        # read vertical coordinates
+        with Dataset(fn_out, 'a', format='NETCDF4_CLASSIC') as nc:
+            # fix time variable
+            t_obj = num2date(nc.variables['time'][:],
+                             nc.variables['time'].units)
+            t_unit = 'hours since {:%Y-%m-%dT%H:%M:%S}'.format(fcinit)
+            nc.variables['time'][:] = date2num(t_obj, t_unit)
+            nc.variables['time'].setncattr('units', t_unit)
+            nc.variables['time'].setncattr('standard_name', 'time')
+
+            self.set_standard_name(nc, species)
+
+            # TODO add history
+
+
+CAMS_TRACER = [('London', 'p26.212', '{fcinit:%Y%m%d}_tracer4emerge_pl.nc', (10, 101, 177), 'CO'),
+               ('Ruhr', 'p27.212', '{fcinit:%Y%m%d}_tracer4emerge_pl.nc', (10, 101, 177), 'CO'),
+               ('Berlin', 'p28.212', '{fcinit:%Y%m%d}_tracer4emerge_pl.nc', (10, 101, 177), 'CO'),
+               ('PoValley', 'p29.212', '{fcinit:%Y%m%d}_tracer4emerge_pl.nc', (10, 101, 177), 'CO'),
+               ('Madrid', 'p30.212', '{fcinit:%Y%m%d}_tracer4emerge_pl.nc', (10, 101, 177), 'CO'),
+               ('Paris', 'p31.212', '{fcinit:%Y%m%d}_tracer4emerge_pl.nc', (10, 101, 177), 'CO'),
+               ('Amsterdam', 'p33.212', '{fcinit:%Y%m%d}_tracer4emerge_pl.nc', (10, 101, 177), 'CO'),
+               ('Rome', 'p34.212', '{fcinit:%Y%m%d}_tracer4emerge_pl.nc', (10, 101, 177), 'CO'),
+               ('BB-NA', 'p32.212', '{fcinit:%Y%m%d}_tracer4emerge_nh_pl.nc', (10, 226, 900), 'CO'),
+               ('BB-Sib', 'p25.212', '{fcinit:%Y%m%d}_tracer4emerge_nh_pl.nc', (10, 226, 900), 'CO'),
+               ('O3strat', 'o3s', '{fcinit:%Y%m%d}_tracer4emerge_o3s_pl.nc', (10, 101, 177), 'O3'),
+]
+
+
+for name, varname, fn, dims, species in CAMS_TRACER:
+    #print(name, varname, fn, dims, species)
+    driver = CAMSTracerDriver(
+            dict(
+                dldriver=FilesystemDownload(
+                    path=os.path.expanduser('/misc/gomzo2/home2/annebl/Tracer-Runs/'),
+                    fnpattern=fn,
+                    do_copy=False,
+                    n_tries=1),
+                force=False,
+                basepath=os.path.expanduser('~/tmp/mss/data/'),
+                name='CAMSTr_' + name,
+                temppath=None,
+                species=[species],
+            ),
+        )
+
+    # set variable name
+    driver.species = {species: dict(varname=varname, urlname=varname)}
+
+    # set layer type
+    driver.layer_type = 'pl'
+
+    # remove AIR_PRESSURE - we don't need it for pressure_level data
+    if 'AIR_PRESSURE' in driver.cfg['species']:
+        driver.cfg['species'].pop(driver.cfg['species'].index('AIR_PRESSURE'))
+
+    # set lat/lon dimensions so that sanity check doesn't fail
+    driver.dims = [('t', None), ('z', dims[0]), ('y', dims[1]), ('x', dims[2])]
+
+    assert 'CAMSTr_' + name not in datasources.keys()
+
+    driver.name = 'CAMSTr_' + name
+    datasources['CAMSTr_' + name] = driver
+
+    driver = None
+    del driver
