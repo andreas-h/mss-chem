@@ -7,11 +7,10 @@ import datetime
 try:
     from StringIO import StringIO
 except ImportError:
-    from io import StringIO
+    from io import BytesIO as StringIO
 
 from netCDF4 import Dataset, num2date, date2num
 import numpy as np
-import pandas as pd
 
 from ..models import CTMDriver
 
@@ -83,11 +82,11 @@ n a[Pa] b ph[hPa] pf[hPa] geopot[m] alt[m] temp[K] density[kg/m**3]
 
 
 def load_vert_coord(leveldev_str):
-    hy = pd.read_csv(StringIO(leveldev_str), comment='#', header=0,
-                     delim_whitespace=True, na_values='-')
-    hyam = hy['a[Pa]'].values[1:]
-    hybm = hy['b'].values[1:]
-    hyn = hy['n'].values[1:]
+    hy = np.genfromtxt(StringIO(CAMS_LEVELDEV_STR.encode()),
+                       comments='#', delimiter='\t', skip_header=2)
+    hyam = hy[1:, 1]
+    hybm = hy[1:, 2]
+    hyn = hy[1:, 0]
     return hyn, hyam, hybm
 
 
@@ -157,7 +156,7 @@ class CAMSGlobDriver(CTMDriver):
                       np.exp(ps_[:, np.newaxis, :, :]))
                 # create 'level' variable
                 nc.createDimension('level', hyn.size)
-                v_lev = nc.createVariable( 'level', np.int32, ('level', ))
+                v_lev = nc.createVariable('level', np.int32, ('level', ))
                 v_lev[:] = np.arange(1, 61, 1, dtype='int32')
                 # write air_pressure to file
                 nc.createVariable(
@@ -192,7 +191,8 @@ class CAMSGlobDriver(CTMDriver):
             v_bm.setncattr('standard_name',
                            'atmosphere_hybrid_height_coordinate')
 
-            nc.variables['level'].setncattr('standard_name', 'model_level_number')
+            nc.variables['level'].setncattr('standard_name',
+                                            'model_level_number')
 
             for var in ['time', 'latitude', 'longitude']:
                 nc.variables[var].setncattr('standard_name', var)
